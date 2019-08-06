@@ -54,7 +54,7 @@ To build from source you'll need to create a new workspace, clone and checkout t
 - Clone the package into the source directory . 
 
         cd ~/ros-workspace/src
-        git clone https://github.com/aws-robotics/cloudwatchmetrics-ros2.git -b release-latest
+        git clone https://github.com/aws-robotics/cloudwatchmetrics-ros2.git
 
 - Fetch unreleased dependencies from github
 
