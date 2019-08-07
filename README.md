@@ -83,16 +83,15 @@ To build from source you'll need to create a new workspace, clone and checkout t
 
 
 ## Launch Files
-**Launch files aren't available yet**
 
-In order to include a `cloudwatch_metrics_collector` in your launch file, you should add `<include file="$(find cloudwatch_metrics_collector)/launch/cloudwatch_metrics_collector.launch" />` to your launch file. The launch file uses the following arguments:
+The launch file uses the following arguments:
 
 | Arg Name | Description |
 | --------- | ------------ |
 | node_name | (optional) The name the metrics node should be launched with. If not provided the node will default to "cloudwatch_metrics_collector" |
-| config_file | (optional) A path to a rosparam config file. If provided the launch file will use rosparam to load the configuration into the private namespace of the node. |
+| config_file | (optional) A path to a config file. If provided the launch file will to load the configuration into the private namespace of the node, otherwise defaults to the sample config file. |
 
-An example launch file called `sample_application.launch` is included in this project that gives an example of how you can include this node in your project and provide it with arguments.
+An example launch file called `cloudwatch_metrics_collector_launch.py` is included in this project that gives an example of how you can include this node in your project and provide it with arguments.
 
 
 ## Usage
@@ -101,7 +100,7 @@ An example launch file called `sample_application.launch` is included in this pr
 - Launch the node by itself
   - ``ros2 run cloudwatch_metrics_collector cloudwatch_metrics_collector __params:=`ros2 pkg prefix cloudwatch_metrics_collector`/share/cloudwatch_metrics_collector/config/sample_configuration.yaml``
 - With launch file using parameters in .yaml format (example provided)
-  - ROS: `ros2 launch cloudwatch_metrics_collector sample_application.launch` 
+  - `ros2 launch cloudwatch_metrics_collector cloudwatch_metrics_collector_launch.py` 
 
 ### Send a test metric 
 - `timestamp=$(date +%s); ros2 topic pub /metrics ros_monitoring_msgs/MetricList "{metrics: [{header:{stamp:{sec: ${timestamp}, nanosec: 0}} , metric_name: 'cw_offline_metric', unit: 'Count', value: 1.0, time_stamp: {sec: ${timestamp}, nanosec: 0}, dimensions: [{name: 'example_dimension', value: 'example_value'}]}]}"`
@@ -109,8 +108,6 @@ An example launch file called `sample_application.launch` is included in this pr
 
 ## Configuration File and Parameters
 An example configuration file named `sample_configuration.yaml` is provided that contains a detailed example configuration for the Node.
-
-All parameters to the Node are provided via the parameter server when the node is started. When loading configuration the Node will start looking for each setting inside of its private namespace and then search up the namespace heirarchy to the global namespace for the parameters.
 
 | Parameter Name | Description | Type | Default |
 | ------------- | -----------------------------------------------------------| ------------- | ------------ |

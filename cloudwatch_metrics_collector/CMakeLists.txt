@@ -101,12 +101,10 @@ install(TARGETS ${PROJECT_NAME}_lib
 
 install(DIRECTORY
   config
+  launch
   DESTINATION share/${PROJECT_NAME}
 )
 
-#############
-## Testing ##
-#############
 ament_export_dependencies(aws_common)
 ament_export_dependencies(aws_ros2_common)
 ament_export_dependencies(cloudwatch_metrics_common)
