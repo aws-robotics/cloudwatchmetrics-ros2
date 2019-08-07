@@ -99,7 +99,7 @@ An example launch file called `sample_application.launch` is included in this pr
 
 ### Run the node
 - Launch the node by itself
-  - ``ros2 run cloudwatch_metrics_collector cloudwatch_metrics_collector __params:=\`ros2 pkg prefix cloudwatch_metrics_collector\`/share/cloudwatch_metrics_collector/config/sample_configuration.yaml``
+  - ``ros2 run cloudwatch_metrics_collector cloudwatch_metrics_collector __params:=`ros2 pkg prefix cloudwatch_metrics_collector`/share/cloudwatch_metrics_collector/config/sample_configuration.yaml``
 - With launch file using parameters in .yaml format (example provided)
   - ROS: `ros2 launch cloudwatch_metrics_collector sample_application.launch` 
 
