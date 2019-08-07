@@ -69,7 +69,7 @@ public:
                   const Aws::Client::ClientConfiguration & config,
                   const Aws::SDKOptions & sdk_options,
                   const Aws::CloudWatchMetrics::CloudWatchOptions & cloudwatch_options,
-                  std::shared_ptr<Aws::Client::ParameterReaderInterface>  parameter_reader,
+                  const std::vector<std::string>&  topics,
                   std::shared_ptr<MetricServiceFactory> metric_service_factory = std::make_shared<MetricServiceFactory>());
 
   void SubscribeAllTopics();
@@ -101,7 +101,6 @@ private:
   std::shared_ptr<MetricService> metric_service_;
   std::vector<std::shared_ptr<rclcpp::Subscription<ros_monitoring_msgs::msg::MetricList>>> subscriptions_;
   rclcpp::Node::SharedPtr node_;
-  std::shared_ptr<Aws::Client::ParameterReaderInterface> parameter_reader_;
   std::vector<std::string> topics_;
 };
 

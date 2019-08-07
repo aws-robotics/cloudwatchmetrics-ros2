@@ -22,7 +22,6 @@
 #include <aws/monitoring/model/PutMetricDataRequest.h>
 #include <aws_common/sdk_utils/client_configuration_provider.h>
 #include <aws_ros2_common/sdk_utils/logging/aws_ros_logger.h>
-#include <aws_ros2_common/sdk_utils/ros2_node_parameter_reader.h>
 #include <rclcpp/rclcpp.hpp>
 #include <ros_monitoring_msgs/msg/metric_data.hpp>
 #include <ros_monitoring_msgs/msg/metric_dimension.hpp>
@@ -30,6 +29,7 @@
 #include <std_msgs/msg/string.h>
 
 #include <cloudwatch_metrics_collector/metrics_collector.hpp>
+#include <cloudwatch_metrics_collector/metrics_collector_parameter_helper.hpp>
 #include <cloudwatch_metrics_common/metric_service.hpp>
 #include <cloudwatch_metrics_common/metric_service_factory.hpp>
 #include <string>
@@ -37,7 +37,6 @@
 #include <map>
 #include <std_srvs/srv/trigger.hpp>
 #include <std_srvs/srv/empty.hpp>
-#include <cloudwatch_metrics_collector/metrics_collector_parameter_helper.hpp>
 
 using namespace Aws::Client;
 using namespace Aws::Utils::Logging;
@@ -54,7 +53,7 @@ void MetricsCollector::Initialize(std::string metric_namespace,
                          const Aws::Client::ClientConfiguration & config,
                          const Aws::SDKOptions & sdk_options,
                          const Aws::CloudWatchMetrics::CloudWatchOptions & cloudwatch_options,
-                         std::shared_ptr<Aws::Client::ParameterReaderInterface> parameter_reader,
+                         const std::vector<std::string> & topics,
                          std::shared_ptr<MetricServiceFactory> metric_service_factory) {
 
   this->metric_namespace_ = metric_namespace;
@@ -65,12 +64,11 @@ void MetricsCollector::Initialize(std::string metric_namespace,
                                                                       config,
                                                                       sdk_options,
                                                                       cloudwatch_options);
-  this->parameter_reader_ = parameter_reader;
+  this->topics_ = topics;
 }
 
 void MetricsCollector::SubscribeAllTopics()
 {
-  ReadTopics(parameter_reader_, topics_);
   for (auto it = topics_.begin(); it != topics_.end(); ++it) {
     auto sub = node_->create_subscription<ros_monitoring_msgs::msg::MetricList>(
             *it, kNodeSubQueueSize,

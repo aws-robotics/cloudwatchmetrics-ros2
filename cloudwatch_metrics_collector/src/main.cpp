@@ -76,6 +76,7 @@ int main(int argc, char * argv[])
   std::string metric_namespace;
   Aws::String dimensions_param;
   std::map<std::string, std::string> default_metric_dims;
+  std::vector<std::string> topics;
 
   // Load the storage resolution
   int storage_resolution = kNodeDefaultMetricDatumStorageResolution;
@@ -87,6 +88,7 @@ int main(int argc, char * argv[])
   ReadStorageResolution(parameter_reader, storage_resolution);
 
   ReadCloudWatchOptions(parameter_reader, cloudwatch_options);
+  ReadTopics(parameter_reader, topics);
   //-----------------End read configuration parameters-----------------------
 
   // create the metric collector
@@ -101,7 +103,7 @@ int main(int argc, char * argv[])
           client_config,
           sdk_options,
           cloudwatch_options,
-          parameter_reader);
+          topics);
 
   auto is_online_callback =
     [&metrics_collector](const std::shared_ptr<rmw_request_id_t> request_header,

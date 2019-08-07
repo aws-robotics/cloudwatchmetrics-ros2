@@ -99,12 +99,12 @@ An example launch file called `sample_application.launch` is included in this pr
 
 ### Run the node
 - Launch the node by itself
-  - `ros2 run cloudwatch_metrics_collector cloudwatch_metrics_collector __params:=\`ros2 pkg prefix cloudwatch_metrics_collector\`/share/cloudwatch_metrics_collector/config/sample_configuration.yaml`
+  - ``ros2 run cloudwatch_metrics_collector cloudwatch_metrics_collector __params:=\`ros2 pkg prefix cloudwatch_metrics_collector\`/share/cloudwatch_metrics_collector/config/sample_configuration.yaml``
 - With launch file using parameters in .yaml format (example provided)
   - ROS: `ros2 launch cloudwatch_metrics_collector sample_application.launch` 
 
 ### Send a test metric 
-- `timestamp=$(date +%s); ros2 topic pub /metrics ros_monitoring_msgs/MetricList -1 "{metrics: [{header:{stamp:{sec: ${timestamp}, nanosec: 0}} , metric_name: 'cw_offline_metric', unit: 'Count', value: 1.0, time_stamp: {sec: ${timestamp}, nanosec: 0}, dimensions: [{name: 'example_dimension', value: 'example_value'}]}]}"`
+- `timestamp=$(date +%s); ros2 topic pub /metrics ros_monitoring_msgs/MetricList "{metrics: [{header:{stamp:{sec: ${timestamp}, nanosec: 0}} , metric_name: 'cw_offline_metric', unit: 'Count', value: 1.0, time_stamp: {sec: ${timestamp}, nanosec: 0}, dimensions: [{name: 'example_dimension', value: 'example_value'}]}]}"`
 
 
 ## Configuration File and Parameters
