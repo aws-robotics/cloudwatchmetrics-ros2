@@ -38,17 +38,17 @@ def generate_launch_description():
     # If this is the RoboMaker Fleet Management environment then add the robot
     # name as a default dimension
     if os.environ[AWS_ROBOMAKER_CAPABILITY] == "AWSRoboMakerFleetManagement" and AWS_ROBOMAKER_ROBOT_NAME in os.environ:
-      aws_default_metric_dimensions = os.environ.get(AWS_ROBOMAKER_ROBOT_NAME)
+      aws_default_metric_dimensions = "RobotName:" + os.environ.get(AWS_ROBOMAKER_ROBOT_NAME)
     # If this is the RoboMaker Simulation envrionment then add the simulation job
     # ID as a default dimension
     if os.environ[AWS_ROBOMAKER_CAPABILITY] == "AWSRoboMakerSimulation" and AWS_ROBOMAKER_SIMULATION_JOB_ID in os.environ:
-       aws_default_metric_dimensions = os.environ.get(AWS_ROBOMAKER_SIMULATION_JOB_ID)
+       aws_default_metric_dimensions = "SimulationJobId:" + os.environ.get(AWS_ROBOMAKER_SIMULATION_JOB_ID)
 
   
       
   parameters=[launch.substitutions.LaunchConfiguration(CONFIG)]
   if aws_robomaker_metric_namespace:
-    parameters.append({"aws_robomaker_metric_namespace": aws_robomaker_metric_namespace})
+    parameters.append({"aws_metrics_namespace": aws_robomaker_metric_namespace})
   if aws_default_metric_dimensions:
     parameters.append({"aws_default_metric_dimensions": aws_default_metric_dimensions})
       
