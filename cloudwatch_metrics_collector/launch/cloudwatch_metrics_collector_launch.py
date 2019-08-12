@@ -20,33 +20,35 @@ import launch_ros.actions
 NODE_NAME = "node_name"
 CONFIG = "config"
 
+# AWS RoboMaker Environment Variables
+class RoboMakerEnvVariables():
+  CAPABILITY = "AWS_ROBOMAKER_CAPABILITY"
+  ROBOT_NAME = "AWS_ROBOMAKER_ROBOT_NAME"
+  SIMULATION_JOB_ID = "AWS_ROBOMAKER_SIMULATION_JOB_ID"
+
 def generate_launch_description():
 
   # Default to included config file
   default_config = os.path.join(get_package_share_directory('cloudwatch_metrics_collector'),
     'config', 'sample_configuration.yaml')
 
-  # Envrionment variables provided by AWS RoboMaker
-  AWS_ROBOMAKER_CAPABILITY = "AWS_ROBOMAKER_CAPABILITY"
-  AWS_ROBOMAKER_ROBOT_NAME = "AWS_ROBOMAKER_ROBOT_NAME"
-  AWS_ROBOMAKER_SIMULATION_JOB_ID = "AWS_ROBOMAKER_SIMULATION_JOB_ID"
-
+  
   aws_robomaker_metric_namespace = None
   aws_default_metric_dimensions = None
-  if AWS_ROBOMAKER_CAPABILITY in os.environ:
-    aws_robomaker_metric_namespace = os.environ[AWS_ROBOMAKER_CAPABILITY]
+  if RoboMakerEnvVariables.CAPABILITY in os.environ:
+    aws_robomaker_metric_namespace = os.environ[RoboMakerEnvVariables.CAPABILITY]
     # If this is the RoboMaker Fleet Management environment then add the robot
     # name as a default dimension
-    if os.environ[AWS_ROBOMAKER_CAPABILITY] == "AWSRoboMakerFleetManagement" and AWS_ROBOMAKER_ROBOT_NAME in os.environ:
-      aws_default_metric_dimensions = "RobotName:" + os.environ.get(AWS_ROBOMAKER_ROBOT_NAME)
+    if os.environ[RoboMakerEnvVariables.CAPABILITY] == "AWSRoboMakerFleetManagement" and RoboMakerEnvVariables.ROBOT_NAME in os.environ:
+      aws_default_metric_dimensions = "RobotName:" + os.environ.get(RoboMakerEnvVariables.ROBOT_NAME)
     # If this is the RoboMaker Simulation envrionment then add the simulation job
     # ID as a default dimension
-    if os.environ[AWS_ROBOMAKER_CAPABILITY] == "AWSRoboMakerSimulation" and AWS_ROBOMAKER_SIMULATION_JOB_ID in os.environ:
-       aws_default_metric_dimensions = "SimulationJobId:" + os.environ.get(AWS_ROBOMAKER_SIMULATION_JOB_ID)
+    if os.environ[RoboMakerEnvVariables.CAPABILITY] == "AWSRoboMakerSimulation" and RoboMakerEnvVariables.SIMULATION_JOB_ID in os.environ:
+       aws_default_metric_dimensions = "SimulationJobId:" + os.environ.get(RoboMakerEnvVariables.SIMULATION_JOB_ID)
 
   
       
-  parameters=[launch.substitutions.LaunchConfiguration(CONFIG)]
+  parameters = [launch.substitutions.LaunchConfiguration(CONFIG), ]
   if aws_robomaker_metric_namespace:
     parameters.append({"aws_metrics_namespace": aws_robomaker_metric_namespace})
   if aws_default_metric_dimensions:
