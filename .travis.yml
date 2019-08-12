@@ -13,6 +13,7 @@ notifications:
 env:
   global:
     - GITHUB_ACCOUNT=aws-robotics
+    - NO_TEST=True
   matrix:
     - ROS_DISTRO=dashing ROS_VERSION=2
 install:
