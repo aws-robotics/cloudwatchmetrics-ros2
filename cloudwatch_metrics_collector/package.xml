@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="3">
   <name>cloudwatch_metrics_collector</name>
-  <version>1.0.0</version>
+  <version>3.0.0</version>
   <description>Subscriber node for the aws/monitoring topic to publish metrics to AWS Cloudwatch</description>
 
   <author email="ros-contributions@amazon.com">AWS RoboMaker</author>
@@ -20,6 +20,8 @@
   <build_depend>rmw_implementation</build_depend>
   <build_depend>ros_monitoring_msgs</build_depend>
   
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>launch</exec_depend>
   <exec_depend>aws_common</exec_depend>
   <exec_depend>aws_ros2_common</exec_depend>
   <exec_depend>cloudwatch_metrics_common</exec_depend>
