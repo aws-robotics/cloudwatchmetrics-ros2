@@ -2,8 +2,8 @@
 Changelog for package cloudwatch_metrics_collector
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+3.0.0 (2019-09-06)
+------------------
 * Bump version to 3.0.0 and add missing dependencies
 * Fix default metric options
   - Fix bug where default metric storage directory, file prefix etc were
