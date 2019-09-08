@@ -23,8 +23,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARNING_CXX_FLAGS}")
 add_compile_options(-std=c++14)
 
 find_package(ament_cmake REQUIRED)
-find_package(ament_cmake_gtest REQUIRED)
-find_package(ament_cmake_gmock REQUIRED)
 find_package(aws_common REQUIRED)
 find_package(aws_ros2_common REQUIRED)
 find_package(cloudwatch_metrics_common REQUIRED)
@@ -127,12 +125,16 @@ ament_package()
 ## Tests ##
 #############
 
-ament_add_gmock(test_cloudwatch_metrics_collector
-        test/cloudwatch_metrics_collector_test.cpp
-        )
-target_include_directories(test_cloudwatch_metrics_collector PRIVATE
-        ${cloudwatch_metrics_ros2_INCS}
-        )
-target_link_libraries(test_cloudwatch_metrics_collector
-        ${PROJECT_NAME}_lib
-        )
+if(BUILD_TESTING)
+  find_package(ament_cmake_gmock REQUIRED)
+  
+  ament_add_gmock(test_cloudwatch_metrics_collector
+          test/cloudwatch_metrics_collector_test.cpp
+          )
+  target_include_directories(test_cloudwatch_metrics_collector PRIVATE
+          ${cloudwatch_metrics_ros2_INCS}
+          )
+  target_link_libraries(test_cloudwatch_metrics_collector
+          ${PROJECT_NAME}_lib
+          )
+endif()
