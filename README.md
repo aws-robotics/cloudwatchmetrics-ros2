@@ -1,7 +1,4 @@
-## Cloudwatchmetrics Ros2
-**Note: this repository is under active development. The package provided here is a release candidate; the API may change without notice and no support is provided for it at the moment.**
-
-**Note: this repository is under active development. The package provided here is a release candidate; the API may change without notice and no support is provided for it at the moment.**
+## CloudWatch Metrics ROS2
 
 ## Overview
 The `cloudwatch_metrics_collector` ROS Node publishes your robot's metrics to the cloud to enable you to easily track the health of a fleet with the use of automated monitoring and actions for when a robot's metrics show abnormalities. You can easily track historic trends and profile behavior such as resource usage. Out of the box it provides a ROS interface to take a ROS message defining a metric and publish it to Amazon CloudWatch Metrics. The only configuration required to get started is setting up AWS Credentials and Permissions for your robot.The CloudWatch Metrics Node can be used with existing ROS Nodes that publish metric messages or with your own nodes if you instrument them to publish your own custom metrics.
@@ -24,7 +21,8 @@ The source code is released under an [Apache 2.0].
 * Travis CI:
     * "master" branch [![Build Status](https://travis-ci.org/aws-robotics/cloudwatchmetrics-ros2.svg?branch=master)](https://travis-ci.org/aws-robotics/cloudwatchmetrics-ros2/branches)
     * "release-latest" branch [![Build Status](https://travis-ci.org/aws-robotics/cloudwatchmetrics-ros2.svg?branch=release-latest)](https://travis-ci.org/aws-robotics/cloudwatchmetrics-ros2/branches)
-* ROS build farm: **Not Yet Released**
+* ROS build farm:
+    * ROS2 Dashing @ u18.04 Bionic [![Build Status](http://build.ros2.org/job/Dbin_uB64__cloudwatch_metrics_collector__ubuntu_bionic_amd64__binary/badge/icon)](http://build.ros2.org/job/Dbin_uB64__cloudwatch_metrics_collector__ubuntu_bionic_amd64__binary)
 
 
 ## Installation
@@ -54,13 +52,7 @@ To build from source you'll need to create a new workspace, clone and checkout t
 - Clone the package into the source directory . 
 
         cd ~/ros-workspace/src
-        git clone https://github.com/aws-robotics/cloudwatchmetrics-ros2.git
-
-- Fetch unreleased dependencies from github
-
-        cd ~/ros-workspace 
-        cp src/cloudwatchmetrics-ros2/.rosinstall.master .rosinstall
-        rosws update
+        git clone https://github.com/aws-robotics/cloudwatchmetrics-ros2.git -b release-latest
 
 - Install dependencies
 
@@ -74,11 +66,10 @@ To build from source you'll need to create a new workspace, clone and checkout t
 
 - Configure ROS library Path
 
-        source ~/ros-workspace/install/setup.bash
+        source ~/ros-workspace/install/local_setup.bash
 
-- Build and run the unit tests
+- Run the unit tests
 
-        colcon build
         colcon test && colcon test-result --all
 
 
@@ -100,10 +91,10 @@ An example launch file called `cloudwatch_metrics_collector_launch.py` is includ
 - Launch the node by itself
   - ``ros2 run cloudwatch_metrics_collector cloudwatch_metrics_collector __params:=`ros2 pkg prefix cloudwatch_metrics_collector`/share/cloudwatch_metrics_collector/config/sample_configuration.yaml``
 - With launch file using parameters in .yaml format (example provided)
-  - `ros2 launch cloudwatch_metrics_collector cloudwatch_metrics_collector_launch.py` 
+  - `ros2 launch cloudwatch_metrics_collector cloudwatch_metrics_collector.launch.py` 
 
 ### Send a test metric 
-- `timestamp=$(date +%s); ros2 topic pub /metrics ros_monitoring_msgs/MetricList "{metrics: [{header:{stamp:{sec: ${timestamp}, nanosec: 0}} , metric_name: 'cw_offline_metric', unit: 'Count', value: 1.0, time_stamp: {sec: ${timestamp}, nanosec: 0}, dimensions: [{name: 'example_dimension', value: 'example_value'}]}]}"`
+- `timestamp=$(date +%s); ros2 topic pub /metrics ros_monitoring_msgs/msg/MetricList "{metrics: [{header:{stamp:{sec: ${timestamp}, nanosec: 0}} , metric_name: 'cw_offline_metric', unit: 'Count', value: 1.0, time_stamp: {sec: ${timestamp}, nanosec: 0}, dimensions: [{name: 'example_dimension', value: 'example_value'}]}]}"`
 
 
 ## Configuration File and Parameters
@@ -143,7 +134,7 @@ Sends metrics in a ROS system to AWS CloudWatch Metrics service.
 - **`Configurable (default="/metrics")`**
 
   The node can subscribe to a configurable list of topic names. If no list in provided then it will default to subscribing to a global topic names `/metrics`.<br/>
-  Message Type: `ros_monitoring_msgs/MetricList`
+  Message Type: `ros_monitoring_msgs/msg/MetricList`
 
 #### Published Topics
 None
