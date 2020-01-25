@@ -15,12 +15,16 @@
 
 #pragma once
 
-#include <cloudwatch_metrics_common/cloudwatch_options.h>
+#include <array>
+#include <iostream>
+#include <string>
+#include <unordered_set>
+
+#include <rclcpp/rclcpp.hpp>
+
 #include <aws_common/sdk_utils/aws_error.h>
 #include <aws_common/sdk_utils/parameter_reader.h>
-#include <rclcpp/rclcpp.hpp>
-#include <unordered_set>
-#include <iostream>
+#include <cloudwatch_metrics_common/cloudwatch_options.h>
 
 using namespace Aws::Client;
 
@@ -28,11 +32,12 @@ namespace Aws {
 namespace CloudWatchMetrics {
 namespace Utils {
 
-const std::string kNodeParamMonitorTopicsListKey("aws_monitored_metric_topics");
-const std::string kNodeParamMetricNamespaceKey = "aws_metrics_namespace";
-const std::string kNodeParamDefaultMetricDimensionsKey  = "aws_default_metric_dimensions";
-const std::string kNodeName = "cloudwatch_metrics_collector";
-const char kNodeParamPublishFrequencyKey[] = "publish_frequency";
+constexpr char kNodeParamMonitorTopicsListKey[] = "aws_monitored_metric_topics";
+constexpr char kNodeParamMonitorTopicTypesListKey[] = "aws_monitored_metric_topic_types";
+constexpr char kNodeParamMetricNamespaceKey[] = "aws_metrics_namespace";
+constexpr char kNodeParamDefaultMetricDimensionsKey[]  = "aws_default_metric_dimensions";
+constexpr char kNodeName[] = "cloudwatch_metrics_collector";
+constexpr char kNodeParamPublishFrequencyKey[] = "publish_frequency";
 
 /** Configuration params for Aws::DataFlow::UploaderOptions **/
 constexpr char kNodeParamBatchMaxQueueSize[] = "batch_max_queue_size";
@@ -48,13 +53,28 @@ constexpr char kNodeParamMaximumFileSize[] = "maximum_file_size";
 constexpr char kNodeParamStorageDirectory[] = "storage_directory";
 constexpr char kNodeParamStorageLimit[] = "storage_limit";
 
+enum class TopicType
+{
+  ROS_MONITORING_MSGS = 1,
+  METRICS_STATISTICS_MSGS = 2
+};
+
+struct TopicInfo
+{
+  std::string topic_name;
+  TopicType topic_type;
+};
+
 constexpr int kNodeSubQueueSize = 100;
 constexpr int kNodePublishFrequencyDefaultValue = 10;
-const int kNodeMetricServiceTimeSec = 1;
-const std::string kNodeDefaultMetricNamespace = "ROS";
-const std::string kNodeDefaulMetricsTopic = "metrics";
+constexpr int kNodeMetricServiceTimeSec = 1;
+constexpr char kNodeDefaultMetricNamespace[] = "ROS";
+const std::array<TopicInfo, 2> kNodeDefaultMetricsTopics = {{
+  {"metrics", TopicType::ROS_MONITORING_MSGS},
+  {"system_metrics", TopicType::METRICS_STATISTICS_MSGS}
+}};
 constexpr int kNodeDefaultMetricDatumStorageResolution = 60;
-const std::string kNodeParamMetricDatumStorageResolutionKey = "storage_resolution";
+constexpr char kNodeParamMetricDatumStorageResolutionKey[] = "storage_resolution";
 const std::set<int> kNodeParamMetricDatumStorageResolutionValidValues = {1, 60};
 
 
@@ -109,7 +129,7 @@ void ReadStorageResolution(
  */
 void ReadTopics(
   std::shared_ptr<Aws::Client::ParameterReaderInterface> parameter_reader,
-  std::vector<std::string> & topics);
+  std::vector<TopicInfo> & topics);
 
 /**
  * Fetch the options related to cloudwatch uploading and offline file mangement

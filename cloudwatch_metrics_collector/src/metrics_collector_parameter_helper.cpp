@@ -13,12 +13,14 @@
  * permissions and limitations under the License.
  */
 
+#include <iostream>
+#include <unordered_set>
+
+#include <aws/core/utils/logging/LogMacros.h>
+#include <rclcpp/rclcpp.hpp>
+
 #include <aws_common/sdk_utils/aws_error.h>
 #include <aws_common/sdk_utils/parameter_reader.h>
-#include <rclcpp/rclcpp.hpp>
-#include <unordered_set>
-#include <iostream>
-#include <aws/core/utils/logging/LogMacros.h>
 #include <cloudwatch_metrics_collector/metrics_collector_parameter_helper.hpp>
 #include <cloudwatch_metrics_common/cloudwatch_options.h>
 
@@ -161,16 +163,42 @@ void ReadStorageResolution(
 
 void ReadTopics(
         std::shared_ptr<Aws::Client::ParameterReaderInterface> parameter_reader,
-        std::vector<std::string> & topics) {
+        std::vector<TopicInfo> & topics) {
 
-  std::string param_key;
-  if (AWS_ERR_OK != parameter_reader->ReadParam(ParameterPath(kNodeParamMonitorTopicsListKey), param_key)) {
-    parameter_reader->ReadParam(ParameterPath(param_key), topics);
+  std::vector<std::string> topic_names;
+  parameter_reader->ReadParam(ParameterPath(kNodeParamMonitorTopicsListKey), topic_names);
+
+  std::vector<int64_t> topic_types;
+  parameter_reader->ReadParam(ParameterPath(kNodeParamMonitorTopicTypesListKey), topic_names);
+
+  if (topic_types.size() != topic_names.size()) {
+    AWS_LOGSTREAM_ERROR(__func__, "Number of topic names (" << topic_names.size()
+      << ") and topic types (" << topic_types.size() << ") provided don't match");
+    return;
   }
-  if (topics.empty()) {
-    AWS_LOGSTREAM_INFO(
-            __func__, "Topic list not defined or empty. Listening on topic: " << kNodeDefaulMetricsTopic);
-    topics.push_back(kNodeDefaulMetricsTopic);
+  
+  if (topic_names.empty()) {
+    std::string info_msg("Topic list not defined or empty. Listening on topics:");
+    for (const TopicInfo & topic_info : kNodeDefaultMetricsTopics) {
+      topics.push_back(topic_info);
+      info_msg += ' ';
+      info_msg += topic_info.topic_name;
+    }
+    AWS_LOG_INFO(__func__, info_msg.c_str());
+  } else {
+    for (size_t i = 0; i < topic_names.size(); ++i) {
+      TopicType topic_type;
+      if (topic_types[i] == 1) {
+        topic_type = TopicType::ROS_MONITORING_MSGS;
+      } else if (topic_types[i] == 2) {
+        topic_type = TopicType::METRICS_STATISTICS_MSGS;
+      } else {
+        AWS_LOGSTREAM_ERROR(__func__, "Unexpected topic type (" << topic_types[i] << ") found");
+        topics.clear();
+        return;
+      }
+      topics.push_back(TopicInfo{std::move(topic_names[i]), topic_type});
+    }
   }
 }
 

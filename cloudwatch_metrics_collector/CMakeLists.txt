@@ -32,6 +32,7 @@ find_package(rmw_implementation REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rosgraph_msgs REQUIRED)
 find_package(ros_monitoring_msgs REQUIRED)
+find_package(metrics_statistics_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(std_msgs REQUIRED)
 
@@ -52,6 +53,7 @@ set(cloudwatch_metrics_ros2_INCS
   ${rclcpp_INCLUDE_DIRS}
   ${rosgraph_msgs_INCLUDE_DIRS}
   ${ros_monitoring_msgs_INCLUDE_DIRS}
+  ${metrics_statistics_msgs_INCLUDE_DIRS}
   ${std_srvs_INCLUDE_DIRS}
   ${std_msgs_INCLUDE_DIRS}
 )
@@ -68,6 +70,7 @@ set(cloudwatch_metrics_ros2_LIBS
   ${rclcpp_LIBRARIES}
   ${rosgraph_msgs_LIBRARIES}
   ${ros_monitoring_msgs_LIBRARIES}
+  ${metrics_statistics_msgs_LIBRARIES}
   ${std_srvs_LIBRARIES}
   ${std_msgs_LIBRARIES}
 )
@@ -114,6 +117,7 @@ ament_export_dependencies(rmw_implementation)
 ament_export_dependencies(rclcpp)
 ament_export_dependencies(rosgraph_msgs)
 ament_export_dependencies(ros_monitoring_msgs)
+ament_export_dependencies(metrics_statistics_msgs)
 ament_export_dependencies(std_srvs)
 ament_export_dependencies(std_msgs)
 
