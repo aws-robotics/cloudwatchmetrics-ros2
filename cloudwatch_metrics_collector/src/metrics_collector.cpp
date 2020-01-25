@@ -85,8 +85,8 @@ void MetricsCollector::SubscribeAllTopics()
     } else if (it->topic_type == TopicType::METRICS_STATISTICS_MSGS) {
       sub = node_->create_subscription<metrics_statistics_msgs::msg::MetricsMessage>(
               it->topic_name, kNodeSubQueueSize,
-              [this](metrics_statistics_msgs::msg::MetricsMessage::UniquePtr /*msg*/) -> void {
-                // this->RecordMetrics(std::move(msg));
+              [this](metrics_statistics_msgs::msg::MetricsMessage::UniquePtr msg) -> void {
+                this->RecordMetrics(std::move(msg));
               });
     }
     subscriptions_.push_back(std::move(sub));
