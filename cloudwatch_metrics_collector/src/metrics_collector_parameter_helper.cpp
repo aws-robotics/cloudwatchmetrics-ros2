@@ -17,10 +17,10 @@
 #include <unordered_set>
 
 #include <aws/core/utils/logging/LogMacros.h>
-#include <rclcpp/rclcpp.hpp>
-
 #include <aws_common/sdk_utils/aws_error.h>
 #include <aws_common/sdk_utils/parameter_reader.h>
+#include <rclcpp/rclcpp.hpp>
+
 #include <cloudwatch_metrics_collector/metrics_collector_parameter_helper.hpp>
 #include <cloudwatch_metrics_common/cloudwatch_options.h>
 

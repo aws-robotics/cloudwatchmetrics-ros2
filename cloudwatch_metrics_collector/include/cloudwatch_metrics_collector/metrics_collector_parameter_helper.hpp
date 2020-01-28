@@ -55,8 +55,8 @@ constexpr char kNodeParamStorageLimit[] = "storage_limit";
 
 enum class TopicType
 {
-  ROS_MONITORING_MSGS = 1,
-  METRICS_STATISTICS_MSGS = 2
+  ROS_MONITORING_MSGS,
+  METRICS_STATISTICS_MSGS
 };
 
 struct TopicInfo
