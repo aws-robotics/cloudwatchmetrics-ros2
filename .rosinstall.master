@@ -14,3 +14,7 @@
     uri: https://github.com/aws-robotics/monitoringmessages-ros2.git
     local-name: monitoringmessages-ros2
     version: master
+- git:
+    uri: https://github.com/ros-tooling/system_metrics_collector.git
+    local-name: system_metrics_collector-ros2
+    version: master

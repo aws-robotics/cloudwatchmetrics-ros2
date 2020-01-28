@@ -165,39 +165,29 @@ void ReadTopics(
         std::shared_ptr<Aws::Client::ParameterReaderInterface> parameter_reader,
         std::vector<TopicInfo> & topics) {
 
-  std::vector<std::string> topic_names;
-  parameter_reader->ReadParam(ParameterPath(kNodeParamMonitorTopicsListKey), topic_names);
-
-  std::vector<int64_t> topic_types;
-  parameter_reader->ReadParam(ParameterPath(kNodeParamMonitorTopicTypesListKey), topic_names);
-
-  if (topic_types.size() != topic_names.size()) {
-    AWS_LOGSTREAM_ERROR(__func__, "Number of topic names (" << topic_names.size()
-      << ") and topic types (" << topic_types.size() << ") provided don't match");
-    return;
-  }
-  
-  if (topic_names.empty()) {
-    std::string info_msg("Topic list not defined or empty. Listening on topics:");
-    for (const TopicInfo & topic_info : kNodeDefaultMetricsTopics) {
-      topics.push_back(topic_info);
-      info_msg += ' ';
-      info_msg += topic_info.topic_name;
-    }
-    AWS_LOG_INFO(__func__, info_msg.c_str());
+  std::vector<std::string> monitor_topic_names;
+  parameter_reader->ReadParam(ParameterPath(kNodeParamMonitorTopicsListKey), monitor_topic_names);
+  if (monitor_topic_names.empty()) {
+    AWS_LOGSTREAM_INFO(__func__, "Monitoring topics list not defined or empty. Listening on topic: "
+                       << kNodeDefaultMetricsTopics.at(TopicType::ROS_MONITORING_MSGS));
+    topics.push_back(TopicInfo{kNodeDefaultMetricsTopics.at(TopicType::ROS_MONITORING_MSGS),
+                               TopicType::ROS_MONITORING_MSGS});
   } else {
-    for (size_t i = 0; i < topic_names.size(); ++i) {
-      TopicType topic_type;
-      if (topic_types[i] == 1) {
-        topic_type = TopicType::ROS_MONITORING_MSGS;
-      } else if (topic_types[i] == 2) {
-        topic_type = TopicType::METRICS_STATISTICS_MSGS;
-      } else {
-        AWS_LOGSTREAM_ERROR(__func__, "Unexpected topic type (" << topic_types[i] << ") found");
-        topics.clear();
-        return;
-      }
-      topics.push_back(TopicInfo{std::move(topic_names[i]), topic_type});
+    for (auto & topic_name : monitor_topic_names) {
+      topics.push_back(TopicInfo{std::move(topic_name), TopicType::ROS_MONITORING_MSGS});
+    }
+  }
+
+  std::vector<std::string> metrics_topic_names;
+  parameter_reader->ReadParam(ParameterPath(kNodeParamMetricsTopicsListKey), metrics_topic_names);
+  if (metrics_topic_names.empty()) {
+    AWS_LOGSTREAM_INFO(__func__, "Metrics topics list not defined or empty. Listening on topic: "
+                       << kNodeDefaultMetricsTopics.at(TopicType::METRICS_STATISTICS_MSGS));
+    topics.push_back(TopicInfo{kNodeDefaultMetricsTopics.at(TopicType::METRICS_STATISTICS_MSGS),
+                               TopicType::METRICS_STATISTICS_MSGS});
+  } else {
+    for (auto & topic_name : metrics_topic_names) {
+      topics.push_back(TopicInfo{std::move(topic_name), TopicType::METRICS_STATISTICS_MSGS});
     }
   }
 }

@@ -15,20 +15,20 @@
 
 #pragma once
 
-#include <aws_common/sdk_utils/logging/aws_log_system.h>
-#include <rclcpp/rclcpp.hpp>
-#include <builtin_interfaces/msg/time.hpp>
-#include <ros_monitoring_msgs/msg/metric_list.hpp>
-#include <metrics_statistics_msgs/msg/metrics_message.hpp>
-#include <std_srvs/srv/trigger.hpp>
-#include <std_srvs/srv/empty.hpp>
+#include <map>
+#include <string>
 
+#include <aws_common/sdk_utils/logging/aws_log_system.h>
+#include <builtin_interfaces/msg/time.hpp>
+#include <metrics_statistics_msgs/msg/metrics_message.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <ros_monitoring_msgs/msg/metric_list.hpp>
+#include <std_srvs/srv/empty.hpp>
+#include <std_srvs/srv/trigger.hpp>
+
+#include <cloudwatch_metrics_collector/metrics_collector_parameter_helper.hpp>
 #include <cloudwatch_metrics_common/metric_service.hpp>
 #include <cloudwatch_metrics_common/metric_service_factory.hpp>
-#include <cloudwatch_metrics_collector/metrics_collector_parameter_helper.hpp>
-
-#include <string>
-#include <map>
 
 namespace Aws {
 namespace CloudWatchMetrics {
@@ -70,6 +70,7 @@ public:
    * @param storage_resolution
    * @param config
    * @param sdk_options
+   * @param topics
    * @param metric_service_factory
    */
   void Initialize(std::string metric_namespace,

@@ -13,34 +13,36 @@
  * permissions and limitations under the License.
  */
 
+#include <limits>
+#include <map>
+#include <string>
+#include <vector>
+
 #include <aws/core/Aws.h>
 #include <aws/core/client/ClientConfiguration.h>
-#include <aws/core/utils/StringUtils.h>
 #include <aws/core/utils/logging/AWSLogging.h>
 #include <aws/core/utils/logging/LogMacros.h>
+#include <aws/core/utils/StringUtils.h>
 #include <aws/monitoring/CloudWatchClient.h>
 #include <aws/monitoring/model/PutMetricDataRequest.h>
 #include <aws_common/sdk_utils/client_configuration_provider.h>
 #include <aws_ros2_common/sdk_utils/logging/aws_ros_logger.h>
-#include <rclcpp/rclcpp.hpp>
 #include <builtin_interfaces/msg/time.hpp>
-#include <ros_monitoring_msgs/msg/metric_data.hpp>
-#include <ros_monitoring_msgs/msg/metric_dimension.hpp>
-#include <ros_monitoring_msgs/msg/metric_list.hpp>
 #include <metrics_statistics_msgs/msg/metrics_message.hpp>
 #include <metrics_statistics_msgs/msg/statistic_data_point.hpp>
 #include <metrics_statistics_msgs/msg/statistic_data_type.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <ros_monitoring_msgs/msg/metric_data.hpp>
+#include <ros_monitoring_msgs/msg/metric_dimension.hpp>
+#include <ros_monitoring_msgs/msg/metric_list.hpp>
 #include <std_msgs/msg/string.h>
+#include <std_srvs/srv/empty.hpp>
+#include <std_srvs/srv/trigger.hpp>
 
 #include <cloudwatch_metrics_collector/metrics_collector.hpp>
 #include <cloudwatch_metrics_collector/metrics_collector_parameter_helper.hpp>
 #include <cloudwatch_metrics_common/metric_service.hpp>
 #include <cloudwatch_metrics_common/metric_service_factory.hpp>
-#include <string>
-#include <vector>
-#include <map>
-#include <std_srvs/srv/trigger.hpp>
-#include <std_srvs/srv/empty.hpp>
 
 using namespace Aws::Client;
 using namespace Aws::Utils::Logging;
@@ -74,17 +76,17 @@ void MetricsCollector::Initialize(std::string metric_namespace,
 
 void MetricsCollector::SubscribeAllTopics()
 {
-  for (auto it = topics_.cbegin(); it != topics_.cend(); ++it) {
+  for (const auto & topic_info : topics_) {
     std::shared_ptr<rclcpp::SubscriptionBase> sub;
-    if (it->topic_type == TopicType::ROS_MONITORING_MSGS) {
+    if (topic_info.topic_type == TopicType::ROS_MONITORING_MSGS) {
       sub = node_->create_subscription<ros_monitoring_msgs::msg::MetricList>(
-              it->topic_name, kNodeSubQueueSize,
+              topic_info.topic_name, kNodeSubQueueSize,
               [this](ros_monitoring_msgs::msg::MetricList::UniquePtr metric_list_msg) -> void {
                 this->RecordMetrics(std::move(metric_list_msg));
               });
-    } else if (it->topic_type == TopicType::METRICS_STATISTICS_MSGS) {
+    } else if (topic_info.topic_type == TopicType::METRICS_STATISTICS_MSGS) {
       sub = node_->create_subscription<metrics_statistics_msgs::msg::MetricsMessage>(
-              it->topic_name, kNodeSubQueueSize,
+              topic_info.topic_name, kNodeSubQueueSize,
               [this](metrics_statistics_msgs::msg::MetricsMessage::UniquePtr msg) -> void {
                 this->RecordMetrics(std::move(msg));
               });
@@ -124,10 +126,10 @@ int MetricsCollector::RecordMetrics(
     bool batched = metric_service_->batchData(metric_object);
 
     if (!batched) {
-      AWS_LOGSTREAM_ERROR(__func__, "Failed to record metric");
+      AWS_LOGSTREAM_ERROR(__func__, "Failed to record ROS monitoring message");
+    } else {
+      ++batched_count;
     }
-
-    batched_count++;
   }
   return batched_count;
 }
@@ -135,43 +137,41 @@ int MetricsCollector::RecordMetrics(
 int MetricsCollector::RecordMetrics(
   metrics_statistics_msgs::msg::MetricsMessage::UniquePtr msg)
 {
-  int batched_count = 0;
-  AWS_LOGSTREAM_DEBUG(__func__, "Received " << msg->statistics.size() << " metrics");
+  AWS_LOGSTREAM_DEBUG(__func__, "Received metric with " << msg->statistics.size() << " types of statistics");
+  AWS_LOGSTREAM_DEBUG(__func__, "Recording metric with name=[" << msg->measurement_source_name << "]");
 
-  for (auto & statistic : msg->statistics) {
-    std::map<std::string, std::string> dimensions;
+  // create a MetricObject with message parameters to batch
+  Aws::CloudWatchMetrics::Utils::MetricObject metric_object;
+  metric_object.metric_name = std::move(msg->measurement_source_name);
+  metric_object.unit = std::move(msg->unit);
+  metric_object.timestamp = GetMetricDataEpochMillis(msg->window_start);
+  metric_object.value = std::numeric_limits<double>::quiet_NaN();
+  metric_object.storage_resolution = this->storage_resolution_.load();
+
+  metric_object.dimensions["metric_type"] = std::move(msg->metrics_source);
+  metric_object.dimensions["duration"] = GetMetricDataEpochMillis(msg->window_stop) - metric_object.timestamp;
+
+  for (const auto & statistic : msg->statistics) {
     if (statistic.data_type == StatisticDataType::STATISTICS_DATA_TYPE_AVERAGE) {
-      dimensions["statistic_type"] = "avg";
+      metric_object.value = statistic.data;
     } else if (statistic.data_type == StatisticDataType::STATISTICS_DATA_TYPE_MAXIMUM) {
-      dimensions["statistic_type"] = "max";
+      metric_object.statistic_values[StatisticValuesType::MAXIMUM] = statistic.data;
     } else if (statistic.data_type == StatisticDataType::STATISTICS_DATA_TYPE_MINIMUM) {
-      dimensions["statistic_type"] = "min";
+      metric_object.statistic_values[StatisticValuesType::MINIMUM] = statistic.data;
     } else if (statistic.data_type == StatisticDataType::STATISTICS_DATA_TYPE_SAMPLE_COUNT) {
-      dimensions["statistic_type"] = "count";
+      metric_object.statistic_values[StatisticValuesType::SAMPLE_COUNT] = statistic.data;
     } else if (statistic.data_type == StatisticDataType::STATISTICS_DATA_TYPE_STDDEV) {
-      dimensions["statistic_type"] = "stddev";
+      metric_object.dimensions["stddev"] = std::to_string(statistic.data);
     }
-    dimensions["metric_type"] = msg->metrics_source;
-
-    AWS_LOGSTREAM_DEBUG(__func__, "Recording metric with name=[" << msg->measurement_source_name << "]");
-
-    // create a MetricObject with message parameters to batch
-    Aws::CloudWatchMetrics::Utils::MetricObject metric_object{msg->measurement_source_name,
-                                                              statistic.data,
-                                                              "",
-                                                              GetMetricDataEpochMillis(msg->window_start),
-                                                              dimensions,
-                                                              this->storage_resolution_.load()};
-    bool batched = metric_service_->batchData(metric_object);
-
-    if (!batched) {
-      AWS_LOGSTREAM_ERROR(__func__, "Failed to record metric");
-    }
-
-    batched_count++;
   }
 
-  return batched_count;
+  bool batched = metric_service_->batchData(metric_object);
+  if (!batched) {
+    AWS_LOGSTREAM_ERROR(__func__, "Failed to record metrics statistics message");
+    return 0;
+  } else {
+    return 1;
+  }
 }
 
 int64_t MetricsCollector::GetMetricDataEpochMillis(const builtin_interfaces::msg::Time & time_stamp)

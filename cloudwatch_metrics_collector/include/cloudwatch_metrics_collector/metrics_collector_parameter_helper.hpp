@@ -33,7 +33,7 @@ namespace CloudWatchMetrics {
 namespace Utils {
 
 constexpr char kNodeParamMonitorTopicsListKey[] = "aws_monitored_metric_topics";
-constexpr char kNodeParamMonitorTopicTypesListKey[] = "aws_monitored_metric_topic_types";
+constexpr char kNodeParamMetricsTopicsListKey[] = "system_metrics_topics";
 constexpr char kNodeParamMetricNamespaceKey[] = "aws_metrics_namespace";
 constexpr char kNodeParamDefaultMetricDimensionsKey[]  = "aws_default_metric_dimensions";
 constexpr char kNodeName[] = "cloudwatch_metrics_collector";
@@ -69,10 +69,10 @@ constexpr int kNodeSubQueueSize = 100;
 constexpr int kNodePublishFrequencyDefaultValue = 10;
 constexpr int kNodeMetricServiceTimeSec = 1;
 constexpr char kNodeDefaultMetricNamespace[] = "ROS";
-const std::array<TopicInfo, 2> kNodeDefaultMetricsTopics = {{
-  {"metrics", TopicType::ROS_MONITORING_MSGS},
-  {"system_metrics", TopicType::METRICS_STATISTICS_MSGS}
-}};
+const std::map<TopicType, std::string> kNodeDefaultMetricsTopics = {
+  {TopicType::ROS_MONITORING_MSGS, "metrics"},
+  {TopicType::METRICS_STATISTICS_MSGS, "system_metrics"}
+};
 constexpr int kNodeDefaultMetricDatumStorageResolution = 60;
 constexpr char kNodeParamMetricDatumStorageResolutionKey[] = "storage_resolution";
 const std::set<int> kNodeParamMetricDatumStorageResolutionValidValues = {1, 60};
