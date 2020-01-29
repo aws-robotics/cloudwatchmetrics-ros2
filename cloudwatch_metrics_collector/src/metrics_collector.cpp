@@ -204,11 +204,8 @@ int MetricsCollector::RecordMetrics(
     ++batched_count;
   }
 
-  dimensions.clear();
-  dimensions["metric_type"] = msg->metrics_source + " stddev";
-
   MetricObject stddev_object(
-    msg->measurement_source_name,
+    msg->measurement_source_name + "_stddev",
     msg->unit,
     GetMetricDataEpochMillis(msg->window_start),
     stddev,
