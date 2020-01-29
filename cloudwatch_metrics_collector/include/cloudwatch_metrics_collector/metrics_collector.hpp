@@ -42,7 +42,7 @@ public:
   ~MetricsCollector() = default;
 
   /**
-   * Accept input metric message to be batched for publishing.
+   * Accept input ros_monitoring_msgs::msg::MetricList message to be batched for publishing.
    *
    * @param metric_list_msg
    * @return the number of metrics successfully batched
@@ -50,7 +50,7 @@ public:
   int RecordMetrics(ros_monitoring_msgs::msg::MetricList::UniquePtr metric_list_msg);
 
   /**
-   * Accept input metric message to be batched for publishing.
+   * Accept input metrics_statistics_msgs::msg::MetricsMessage message to be batched for publishing.
    *
    * @param msg
    * @return the number of metrics successfully batched
@@ -80,7 +80,28 @@ public:
                   const Aws::Client::ClientConfiguration & config,
                   const Aws::SDKOptions & sdk_options,
                   const Aws::CloudWatchMetrics::CloudWatchOptions & cloudwatch_options,
-                  const std::vector<Aws::CloudWatchMetrics::Utils::TopicInfo> & topics,
+                  const std::vector<std::string> & topics,
+                  std::shared_ptr<MetricServiceFactory> metric_service_factory = std::make_shared<MetricServiceFactory>());
+
+  /**
+   * Initialize the MetricsCollector with parameters read from the config file.
+   *
+   * @param metric_namespace
+   * @param default_dimensions
+   * @param storage_resolution
+   * @param config
+   * @param sdk_options
+   * @param topics
+   * @param metric_service_factory
+   */
+  void Initialize(std::string metric_namespace,
+                  std::map<std::string, std::string> & default_dimensions,
+                  int storage_resolution,
+                  rclcpp::Node::SharedPtr node,
+                  const Aws::Client::ClientConfiguration & config,
+                  const Aws::SDKOptions & sdk_options,
+                  const Aws::CloudWatchMetrics::CloudWatchOptions & cloudwatch_options,
+                  const std::vector<TopicInfo> & topics,
                   std::shared_ptr<MetricServiceFactory> metric_service_factory = std::make_shared<MetricServiceFactory>());
 
   void SubscribeAllTopics();
