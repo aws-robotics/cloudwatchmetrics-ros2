@@ -179,20 +179,17 @@ TEST_F(MetricsCollectorFixture, RecordMetricsMessages)
   ASSERT_EQ(2 * metric_data.size(), metric_objs.size());
 
   for (size_t i = 0; i < metric_data.size(); ++i) {
-    EXPECT_EQ(metric_data[i].measurement_source_name, metric_objs[2*i].metric_name);
-    EXPECT_EQ(metric_data[i].measurement_source_name+"_stddev", metric_objs[2*i+1].metric_name);
+    EXPECT_EQ(metric_data[i].measurement_source_name, metric_objs[2*i].dimensions.at("Measurement Source"));
+    EXPECT_EQ(metric_data[i].measurement_source_name, metric_objs[2*i+1].dimensions.at("Measurement Source"));
 
-    EXPECT_EQ(metric_data[i].metrics_source, metric_objs[2*i].dimensions.at("metric_type"));
-    EXPECT_EQ(metric_data[i].metrics_source, metric_objs[2*i+1].dimensions.at("metric_type"));
+    EXPECT_EQ(metric_data[i].metrics_source, metric_objs[2*i].metric_name);
+    EXPECT_EQ(metric_data[i].metrics_source+"_stddev", metric_objs[2*i+1].metric_name);
 
-    EXPECT_EQ(metric_data[i].unit, metric_objs[2*i].dimensions.at("metric_unit"));
-    EXPECT_EQ(metric_data[i].unit, metric_objs[2*i+1].dimensions.at("metric_unit"));
+    EXPECT_EQ(metric_data[i].unit, metric_objs[2*i].unit);
+    EXPECT_EQ(metric_data[i].unit, metric_objs[2*i+1].unit);
 
     EXPECT_EQ(MetricsCollector::GetMetricDataEpochMillis(metric_data[i].window_start), metric_objs[2*i].timestamp);
     EXPECT_EQ(MetricsCollector::GetMetricDataEpochMillis(metric_data[i].window_start), metric_objs[2*i+1].timestamp);
-
-    EXPECT_EQ(MetricsCollector::GetMetricDataEpochMillis(metric_data[i].window_stop)
-      - MetricsCollector::GetMetricDataEpochMillis(metric_data[i].window_start), metric_objs[2*i].value);
 
     for (const auto & statistic : metric_data[i].statistics) {
       if (statistic.data_type == StatisticDataType::STATISTICS_DATA_TYPE_AVERAGE) {

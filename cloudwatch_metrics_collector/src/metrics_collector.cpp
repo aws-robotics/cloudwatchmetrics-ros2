@@ -13,6 +13,7 @@
  * permissions and limitations under the License.
  */
 
+#include <limits>
 #include <map>
 #include <stdexcept>
 #include <string>
@@ -160,6 +161,9 @@ int MetricsCollector::RecordMetrics(
   AWS_LOGSTREAM_DEBUG(__func__, "Received metric with " << msg->statistics.size() << " types of statistics");
   AWS_LOGSTREAM_DEBUG(__func__, "Recording metric with name=[" << msg->measurement_source_name << "]");
 
+  std::map<std::string, std::string> dimensions;
+  dimensions["Measurement Source"] = msg->measurement_source_name;
+
   std::map<StatisticValuesType, double> statistic_values;
   double stddev;
   for (const auto & statistic : msg->statistics) {
@@ -182,17 +186,12 @@ int MetricsCollector::RecordMetrics(
     statistic_values.erase(StatisticValuesType::SUM);
   }
 
-  std::map<std::string, std::string> dimensions;
-  dimensions["metric_type"] = msg->metrics_source;
-  dimensions["metric_unit"] = msg->unit;
-
   // create a MetricObject with message parameters to batch
   MetricObject metric_object(
-    msg->measurement_source_name,
-    "msec",
-    GetMetricDataEpochMillis(msg->window_start),
-    GetMetricDataEpochMillis(msg->window_stop) - GetMetricDataEpochMillis(msg->window_start),
+    msg->metrics_source,
     statistic_values,
+    msg->unit,
+    GetMetricDataEpochMillis(msg->window_start),
     dimensions,
     storage_resolution_.load()
   );
@@ -205,11 +204,10 @@ int MetricsCollector::RecordMetrics(
   }
 
   MetricObject stddev_object(
-    msg->measurement_source_name + "_stddev",
+    msg->metrics_source + "_stddev",
+    stddev,
     msg->unit,
     GetMetricDataEpochMillis(msg->window_start),
-    stddev,
-    std::map<StatisticValuesType, double>(),
     dimensions,
     storage_resolution_.load()
   );
