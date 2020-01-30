@@ -32,7 +32,7 @@ namespace Aws {
 namespace CloudWatchMetrics {
 namespace Utils {
 
-constexpr char kNodeParamMonitorTopicsListKey[] = "aws_monitored_metric_topics";
+constexpr char kNodeParamMonitoringTopicsListKey[] = "aws_monitored_metric_topics";
 constexpr char kNodeParamMetricsTopicsListKey[] = "system_metrics_topics";
 constexpr char kNodeParamMetricNamespaceKey[] = "aws_metrics_namespace";
 constexpr char kNodeParamDefaultMetricDimensionsKey[]  = "aws_default_metric_dimensions";

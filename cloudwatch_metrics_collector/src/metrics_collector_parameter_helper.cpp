@@ -165,15 +165,15 @@ void ReadTopics(
         std::shared_ptr<Aws::Client::ParameterReaderInterface> parameter_reader,
         std::vector<TopicInfo> & topics) {
 
-  std::vector<std::string> monitor_topic_names;
-  parameter_reader->ReadParam(ParameterPath(kNodeParamMonitorTopicsListKey), monitor_topic_names);
-  if (monitor_topic_names.empty()) {
+  std::vector<std::string> monitoring_topic_names;
+  parameter_reader->ReadParam(ParameterPath(kNodeParamMonitoringTopicsListKey), monitoring_topic_names);
+  if (monitoring_topic_names.empty()) {
     AWS_LOGSTREAM_INFO(__func__, "Monitoring topics list not defined or empty. Listening on topic: "
                        << kNodeDefaultMetricsTopics.at(TopicType::ROS_MONITORING_MSGS));
     topics.push_back(TopicInfo{kNodeDefaultMetricsTopics.at(TopicType::ROS_MONITORING_MSGS),
                                TopicType::ROS_MONITORING_MSGS});
   } else {
-    for (auto & topic_name : monitor_topic_names) {
+    for (auto & topic_name : monitoring_topic_names) {
       topics.push_back(TopicInfo{std::move(topic_name), TopicType::ROS_MONITORING_MSGS});
     }
   }

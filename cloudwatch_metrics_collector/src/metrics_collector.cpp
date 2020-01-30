@@ -54,7 +54,7 @@ namespace CloudWatchMetrics {
 namespace Utils {
 
 void MetricsCollector::Initialize(std::string metric_namespace,
-                         std::map<std::string, std::string> & default_dimensions,
+                         const std::map<std::string, std::string> & default_dimensions,
                          int storage_resolution,
                          rclcpp::Node::SharedPtr node,
                          const Aws::Client::ClientConfiguration & config,
@@ -72,7 +72,7 @@ void MetricsCollector::Initialize(std::string metric_namespace,
 }
 
 void MetricsCollector::Initialize(std::string metric_namespace,
-                         std::map<std::string, std::string> & default_dimensions,
+                         const std::map<std::string, std::string> & default_dimensions,
                          int storage_resolution,
                          rclcpp::Node::SharedPtr node,
                          const Aws::Client::ClientConfiguration & config,
@@ -273,5 +273,3 @@ bool MetricsCollector::checkIfOnline(std::shared_ptr<std_srvs::srv::Trigger::Req
 }  // namespace Utils
 }  // namespace CloudWatchMetrics
 }  // namespace Aws
-
-

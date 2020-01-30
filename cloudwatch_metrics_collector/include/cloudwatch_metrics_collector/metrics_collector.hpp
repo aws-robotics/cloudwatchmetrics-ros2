@@ -74,7 +74,7 @@ public:
    * @param metric_service_factory
    */
   void Initialize(std::string metric_namespace,
-                  std::map<std::string, std::string> & default_dimensions,
+                  const std::map<std::string, std::string> & default_dimensions,
                   int storage_resolution,
                   rclcpp::Node::SharedPtr node,
                   const Aws::Client::ClientConfiguration & config,
@@ -95,7 +95,7 @@ public:
    * @param metric_service_factory
    */
   void Initialize(std::string metric_namespace,
-                  std::map<std::string, std::string> & default_dimensions,
+                  const std::map<std::string, std::string> & default_dimensions,
                   int storage_resolution,
                   rclcpp::Node::SharedPtr node,
                   const Aws::Client::ClientConfiguration & config,
@@ -116,7 +116,8 @@ public:
    * @param response output response
    * @return true if the request was handled successfully, false otherwise
    */
-  bool checkIfOnline(std::shared_ptr<std_srvs::srv::Trigger::Request> request, std::shared_ptr<std_srvs::srv::Trigger::Response> response);
+  bool checkIfOnline(std::shared_ptr<std_srvs::srv::Trigger::Request> request,
+                     std::shared_ptr<std_srvs::srv::Trigger::Response> response);
 
   /**
    * Gets the timestamp for the input metric message as milliseconds since epoch
