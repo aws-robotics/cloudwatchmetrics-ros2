@@ -57,7 +57,7 @@ int main(int argc, char * argv[])
   std::vector<std::shared_ptr<rclcpp::Subscription<ros_monitoring_msgs::msg::MetricData>>> subscriptions;
 
   // initialize SDK logging
-  Aws::Utils::Logging::InitializeAWSLogging(Aws::MakeShared<Aws::Utils::Logging::AWSROSLogger>(kNodeName.c_str(),
+  Aws::Utils::Logging::InitializeAWSLogging(Aws::MakeShared<Aws::Utils::Logging::AWSROSLogger>(kNodeName,
     Aws::Utils::Logging::LogLevel::Trace, node));
 
   //-----------Start Read Configuration Parameters---------------------
@@ -76,7 +76,7 @@ int main(int argc, char * argv[])
   std::string metric_namespace;
   Aws::String dimensions_param;
   std::map<std::string, std::string> default_metric_dims;
-  std::vector<std::string> topics;
+  std::vector<Aws::CloudWatchMetrics::Utils::TopicInfo> topics;
 
   // Load the storage resolution
   int storage_resolution = kNodeDefaultMetricDatumStorageResolution;

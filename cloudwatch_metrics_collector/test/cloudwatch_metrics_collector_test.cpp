@@ -17,21 +17,20 @@
 
 #include <aws/core/Aws.h>
 #include <aws/core/utils/logging/LogMacros.h>
-
 #include <rclcpp/rclcpp.hpp>
+#include <ros_monitoring_msgs/msg/metric_data.hpp>
 
-#include <cloudwatch_metrics_common/metric_service.hpp>
-#include <cloudwatch_metrics_common/metric_batcher.h>
-#include <cloudwatch_metrics_common/metric_publisher.hpp>
-#include <cloudwatch_metrics_common/metric_service_factory.hpp>
 #include <cloudwatch_metrics_collector/metrics_collector.hpp>
 #include <cloudwatch_metrics_collector/metrics_collector_parameter_helper.hpp>
+#include <cloudwatch_metrics_common/metric_batcher.h>
+#include <cloudwatch_metrics_common/metric_publisher.hpp>
+#include <cloudwatch_metrics_common/metric_service.hpp>
+#include <cloudwatch_metrics_common/metric_service_factory.hpp>
 
-#include <ros_monitoring_msgs/msg/metric_data.hpp>
+#include "test_common.hpp"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-
 
 using namespace Aws::CloudWatchMetrics;
 using namespace Aws::CloudWatchMetrics::Utils;
@@ -88,12 +87,10 @@ public:
 };
 
 
-class MetricsCollectorFixture : public ::testing::Test
+class CloudwatchMetricsCollectorFixture : public ::testing::Test
 {
 protected:
   const std::string kMetricsTopic = "metrics";
-  const std::string kMetricName1 = "CWMetricsNodeTestMetric";
-  const std::string kMetricUnit1 = "sec";
   const std::string metric_namespace = "test_namespace";
 
   Aws::Client::ClientConfiguration config;
@@ -115,10 +112,9 @@ protected:
     metric_service = std::make_shared<MetricServiceMock>(metric_publisher, metric_batcher);
   }
 
-  void Initialize(std::map<std::string, std::string> metric_dimensions,
-                  const std::vector<std::string> & topics)
+  void Initialize(const std::map<std::string, std::string> & metric_dimensions,
+                  const std::vector<TopicInfo> & topics)
   {
-
     rclcpp::init(test_argc, test_argv);
     metrics_collector = std::make_shared<MetricsCollector>();
 
@@ -127,14 +123,11 @@ protected:
     node_options.automatically_declare_parameters_from_overrides(true);
     node_handle = std::make_shared<rclcpp::Node>("CWMetricsNodeTest", node_options);
 
-    metrics_pub = node_handle->create_publisher<ros_monitoring_msgs::msg::MetricList>(kMetricsTopic.c_str(), 1);
-
+    metrics_pub = node_handle->create_publisher<ros_monitoring_msgs::msg::MetricList>(kMetricsTopic, 1);
     EXPECT_CALL(*metric_service, start()).Times(1);
 
     std::shared_ptr<MetricServiceFactoryMock> metric_factory_mock = std::make_shared<MetricServiceFactoryMock>();
-
-    EXPECT_CALL(*metric_factory_mock,
-                createMetricService(StrEq(metric_namespace), _, _, _))
+    EXPECT_CALL(*metric_factory_mock, createMetricService(StrEq(metric_namespace), _, _, _))
     .WillOnce(Return(metric_service));
 
     metrics_collector->Initialize(metric_namespace,
@@ -159,7 +152,7 @@ protected:
     rclcpp::shutdown();
   }
 
-  void SendMetricMessages(int num_msgs, ros_monitoring_msgs::msg::MetricData & metric_data_proto)
+  void SendMonitoringMessages(int num_msgs, ros_monitoring_msgs::msg::MetricData & metric_data_proto)
   {
     ros_monitoring_msgs::msg::MetricList metric_list_msg = ros_monitoring_msgs::msg::MetricList();
     for (int i = 0; i < num_msgs; i++) {
@@ -174,27 +167,19 @@ protected:
       std::this_thread::sleep_for(std::chrono::seconds(1));
     }
   }
-
-  ros_monitoring_msgs::msg::MetricData BasicMetricData()
-  {
-    ros_monitoring_msgs::msg::MetricData metric_data = ros_monitoring_msgs::msg::MetricData();
-    metric_data.metric_name = kMetricName1;
-    metric_data.unit = kMetricUnit1;
-    return metric_data;
-  }
 };
 
 // Test fixture Setup and TearDown
-TEST_F(MetricsCollectorFixture, Sanity)
+TEST_F(CloudwatchMetricsCollectorFixture, Sanity)
 {
   ASSERT_TRUE(true);
 }
 
 // Test fixture init
-TEST_F(MetricsCollectorFixture, TestInitialize)
+TEST_F(CloudwatchMetricsCollectorFixture, TestInitialize)
 {
   std::map<std::string, std::string> metric_dimensions;
-  std::vector<std::string> topics = {kMetricsTopic};
+  std::vector<TopicInfo> topics = {{kMetricsTopic, TopicType::ROS_MONITORING_MSGS}};
   Initialize(metric_dimensions, topics);
 }
 
@@ -209,7 +194,7 @@ TEST_P(GetMetricDataEpochMillisFixture, getMetricDataEpochMillisTestOk)
 {
   ros_monitoring_msgs::msg::MetricData metric_msg;
   metric_msg.time_stamp = GetParam().input_time;
-  EXPECT_EQ(GetParam().expected_timestamp, MetricsCollector::GetMetricDataEpochMillis(metric_msg));
+  EXPECT_EQ(GetParam().expected_timestamp, MetricsCollector::GetMetricDataEpochMillis(metric_msg.time_stamp));
 }
 
 const GetMetricDataEpochMillisTestDatum getMetricDataEpochMillisTestData [] = {
@@ -225,10 +210,10 @@ const GetMetricDataEpochMillisTestDatum getMetricDataEpochMillisTestData [] = {
 INSTANTIATE_TEST_CASE_P(getMetricDataEpochMillisTest, GetMetricDataEpochMillisFixture,
                         ::testing::ValuesIn(getMetricDataEpochMillisTestData));
 
-TEST_F(MetricsCollectorFixture, timerCallsMetricManagerService)
+TEST_F(CloudwatchMetricsCollectorFixture, timerCallsMetricManagerService)
 {
   std::map<std::string, std::string> metric_dimensions;
-  std::vector<std::string> topics = {kMetricsTopic};
+  std::vector<TopicInfo> topics = {{kMetricsTopic, TopicType::ROS_MONITORING_MSGS}};
   Initialize(metric_dimensions, topics);
 
   int num_msgs = 3;
@@ -241,8 +226,8 @@ TEST_F(MetricsCollectorFixture, timerCallsMetricManagerService)
   .Times(::testing::AtLeast(num_msgs))
   .WillRepeatedly(::testing::Return(true));
 
-  ros_monitoring_msgs::msg::MetricData metric_data = BasicMetricData();
-  SendMetricMessages(num_msgs, metric_data);
+  ros_monitoring_msgs::msg::MetricData metric_data = EmptyMonitoringData();
+  SendMonitoringMessages(num_msgs, metric_data);
   for (int i = 0; i < num_msgs; i++) {
     rclcpp::spin_some(node_handle);
     std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -263,17 +248,17 @@ MATCHER_P(metricsAreEqual, toTest, "")
   // timestamp is ignored
 }
 
-TEST_F(MetricsCollectorFixture, metricsRecordedNoDimension)
+TEST_F(CloudwatchMetricsCollectorFixture, metricsRecordedNoDimension)
 {
   std::map<std::string, std::string> metric_dimensions;
-  std::vector<std::string> topics = {kMetricsTopic};
+  std::vector<TopicInfo> topics = {{kMetricsTopic, TopicType::ROS_MONITORING_MSGS}};
   Initialize(metric_dimensions, topics);
 
   int num_msgs = 3;
 
-  MetricObject m01 = MetricObject {kMetricName1, 0.0, kMetricUnit1, 1234, std::map<std::string, std::string>(), 60};
-  MetricObject m02 = MetricObject {kMetricName1, 1.0, kMetricUnit1, 1234, std::map<std::string, std::string>(), 60};
-  MetricObject m03 = MetricObject {kMetricName1, 2.0, kMetricUnit1, 1234, std::map<std::string, std::string>(), 60};
+  MetricObject m01 = MetricObject {kMetricName, 0.0, kMetricUnit, 1234, std::map<std::string, std::string>(), 60};
+  MetricObject m02 = MetricObject {kMetricName, 1.0, kMetricUnit, 1234, std::map<std::string, std::string>(), 60};
+  MetricObject m03 = MetricObject {kMetricName, 2.0, kMetricUnit, 1234, std::map<std::string, std::string>(), 60};
 
   EXPECT_CALL(*metric_service, publishBatchedData())
   .Times(::testing::AnyNumber())
@@ -288,24 +273,24 @@ TEST_F(MetricsCollectorFixture, metricsRecordedNoDimension)
     .WillOnce(::testing::Return(true));
   }
 
-  ros_monitoring_msgs::msg::MetricData metric_data = BasicMetricData();
-  SendMetricMessages(num_msgs, metric_data);
+  ros_monitoring_msgs::msg::MetricData metric_data = EmptyMonitoringData();
+  SendMonitoringMessages(num_msgs, metric_data);
   rclcpp::spin_some(node_handle);
 }
 
-TEST_F(MetricsCollectorFixture, metricRecordedWithDimension)
+TEST_F(CloudwatchMetricsCollectorFixture, metricRecordedWithDimension)
 {
   int num_msgs = 3;
   const std::string metric_dimension_name = "CWMetricsNodeTestDim1";
   const std::string metric_dimension_value = "CWMetricsNodeTestDim1Value";
 
-  std::vector<std::string> topics = {kMetricsTopic};
+  std::vector<TopicInfo> topics = {{kMetricsTopic, TopicType::ROS_MONITORING_MSGS}};
   std::map<std::string, std::string> expected_dim;
   expected_dim[metric_dimension_name] = metric_dimension_value;
 
-  MetricObject m01 = MetricObject {kMetricName1, 0.0, kMetricUnit1, 1234, expected_dim, 60};
-  MetricObject m02 = MetricObject {kMetricName1, 1.0, kMetricUnit1, 1234, expected_dim, 60};
-  MetricObject m03 = MetricObject {kMetricName1, 2.0, kMetricUnit1, 1234, expected_dim, 60};
+  MetricObject m01 = MetricObject {kMetricName, 0.0, kMetricUnit, 1234, expected_dim, 60};
+  MetricObject m02 = MetricObject {kMetricName, 1.0, kMetricUnit, 1234, expected_dim, 60};
+  MetricObject m03 = MetricObject {kMetricName, 2.0, kMetricUnit, 1234, expected_dim, 60};
 
   EXPECT_CALL(*metric_service, publishBatchedData())
   .Times(::testing::AnyNumber())
@@ -323,29 +308,29 @@ TEST_F(MetricsCollectorFixture, metricRecordedWithDimension)
 
   Initialize(expected_dim, topics);
 
-  ros_monitoring_msgs::msg::MetricData metric_data = BasicMetricData();
+  ros_monitoring_msgs::msg::MetricData metric_data = EmptyMonitoringData();
   ros_monitoring_msgs::msg::MetricDimension metric_dimension = ros_monitoring_msgs::msg::MetricDimension();
   metric_dimension.name = metric_dimension_name;
   metric_dimension.value = metric_dimension_value;
   metric_data.dimensions.push_back(metric_dimension);
 
-  SendMetricMessages(num_msgs, metric_data);
+  SendMonitoringMessages(num_msgs, metric_data);
   rclcpp::spin_some(node_handle);
 }
 
-TEST_F(MetricsCollectorFixture, metricRecordedWithDefaultDimensions)
+TEST_F(CloudwatchMetricsCollectorFixture, metricRecordedWithDefaultDimensions)
 {
   int num_msgs = 3;
   const std::string metric_dimension_name = "CWMetricsNodeTestDim1";
   const std::string metric_dimension_value = "CWMetricsNodeTestDim1Value";
 
-  std::vector<std::string> topics = {kMetricsTopic};
+  std::vector<TopicInfo> topics = {{kMetricsTopic, TopicType::ROS_MONITORING_MSGS}};
   std::map<std::string, std::string> expected_dim;
   expected_dim[metric_dimension_name] = metric_dimension_value;
 
-  MetricObject m01 = MetricObject {kMetricName1, 0.0, kMetricUnit1, 1234, expected_dim, 60};
-  MetricObject m02 = MetricObject {kMetricName1, 1.0, kMetricUnit1, 1234, expected_dim, 60};
-  MetricObject m03 = MetricObject {kMetricName1, 2.0, kMetricUnit1, 1234, expected_dim, 60};
+  MetricObject m01 = MetricObject {kMetricName, 0.0, kMetricUnit, 1234, expected_dim, 60};
+  MetricObject m02 = MetricObject {kMetricName, 1.0, kMetricUnit, 1234, expected_dim, 60};
+  MetricObject m03 = MetricObject {kMetricName, 2.0, kMetricUnit, 1234, expected_dim, 60};
 
   EXPECT_CALL(*metric_service, publishBatchedData())
   .Times(::testing::AnyNumber())
@@ -365,20 +350,23 @@ TEST_F(MetricsCollectorFixture, metricRecordedWithDefaultDimensions)
   default_metric_dims.emplace(metric_dimension_name, metric_dimension_value);
   Initialize(default_metric_dims, topics);
 
-  ros_monitoring_msgs::msg::MetricData metric_data = BasicMetricData();
+  ros_monitoring_msgs::msg::MetricData metric_data = EmptyMonitoringData();
 
-  SendMetricMessages(num_msgs, metric_data);
+  SendMonitoringMessages(num_msgs, metric_data);
   rclcpp::spin_some(node_handle);
 }
 
-TEST_F(MetricsCollectorFixture, customTopicsListened)
+TEST_F(CloudwatchMetricsCollectorFixture, customTopicsListened)
 {
   std::map<std::string, std::string> default_metric_dims;
-  std::vector<std::string> topics = {"metrics_topic0", "metrics_topic1"};
+  std::vector<TopicInfo> topics = {
+    {"metrics_topic0", TopicType::ROS_MONITORING_MSGS},
+    {"metrics_topic1", TopicType::ROS_MONITORING_MSGS}
+  };
   Initialize(default_metric_dims, topics);
 
-  MetricObject m01 = MetricObject {kMetricName1, 0.0, kMetricUnit1, 1234, default_metric_dims, 60};
-  MetricObject m02 = MetricObject {kMetricName1, 1.0, kMetricUnit1, 1234, default_metric_dims, 60};
+  MetricObject m01 = MetricObject {kMetricName, 0.0, kMetricUnit, 1234, default_metric_dims, 60};
+  MetricObject m02 = MetricObject {kMetricName, 1.0, kMetricUnit, 1234, default_metric_dims, 60};
 
   EXPECT_CALL(*metric_service, publishBatchedData())
   .Times(::testing::AnyNumber())
@@ -391,23 +379,26 @@ TEST_F(MetricsCollectorFixture, customTopicsListened)
   .WillOnce(::testing::Return(true));
 
   ros_monitoring_msgs::msg::MetricList metric_list_msg = ros_monitoring_msgs::msg::MetricList();
-  ros_monitoring_msgs::msg::MetricData metric_data = BasicMetricData();
+  ros_monitoring_msgs::msg::MetricData metric_data = EmptyMonitoringData();
+
   rclcpp::Publisher<ros_monitoring_msgs::msg::MetricList>::SharedPtr metrics_pub0 =
-    node_handle->create_publisher<ros_monitoring_msgs::msg::MetricList>(topics[0].c_str(), 1);
+    node_handle->create_publisher<ros_monitoring_msgs::msg::MetricList>(topics[0].topic_name, 1);
   metric_data.value = 0;
   metric_data.time_stamp = node_handle->now();
   metric_list_msg.metrics.clear();
   metric_list_msg.metrics.push_back(metric_data);
   metrics_pub0->publish(metric_list_msg);
   rclcpp::spin_some(node_handle);
+
   rclcpp::Publisher<ros_monitoring_msgs::msg::MetricList>::SharedPtr metrics_pub1 =
-    node_handle->create_publisher<ros_monitoring_msgs::msg::MetricList>(topics[1].c_str(), 1);
+    node_handle->create_publisher<ros_monitoring_msgs::msg::MetricList>(topics[1].topic_name, 1);
   metric_data.value = 1;
   metric_data.time_stamp = node_handle->now();
   metric_list_msg.metrics.clear();
   metric_list_msg.metrics.push_back(metric_data);
   metrics_pub1->publish(metric_list_msg);
   rclcpp::spin_some(node_handle);
+
   std::this_thread::sleep_for(std::chrono::seconds(1));
   rclcpp::spin_some(node_handle);
 }
