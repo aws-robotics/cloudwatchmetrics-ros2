@@ -39,7 +39,7 @@ void chrono_time_point_to_builtin_interfaces_time(
   timestamp.nanosec = nanosecs.count();
 }
 
-inline ros_monitoring_msgs::msg::MetricData BasicMonitoringData()
+inline ros_monitoring_msgs::msg::MetricData EmptyMonitoringData()
 {
   ros_monitoring_msgs::msg::MetricData data = ros_monitoring_msgs::msg::MetricData();
   data.metric_name = kMetricName;
@@ -49,7 +49,7 @@ inline ros_monitoring_msgs::msg::MetricData BasicMonitoringData()
   return data;
 }
 
-inline metrics_statistics_msgs::msg::MetricsMessage BasicMetricsData()
+inline metrics_statistics_msgs::msg::MetricsMessage EmptyMetricsData()
 {
   metrics_statistics_msgs::msg::MetricsMessage data = metrics_statistics_msgs::msg::MetricsMessage();
   data.measurement_source_name = kMeasurementSource;

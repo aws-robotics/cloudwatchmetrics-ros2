@@ -166,6 +166,7 @@ int MetricsCollector::RecordMetrics(
 
   std::map<StatisticValuesType, double> statistic_values;
   double stddev;
+  bool is_stddev_set = false;
   for (const auto & statistic : msg->statistics) {
     if (statistic.data_type == StatisticDataType::STATISTICS_DATA_TYPE_AVERAGE) {
       statistic_values[StatisticValuesType::SUM] = statistic.data;
@@ -175,6 +176,7 @@ int MetricsCollector::RecordMetrics(
       statistic_values[StatisticValuesType::MINIMUM] = statistic.data;
     } else if (statistic.data_type == StatisticDataType::STATISTICS_DATA_TYPE_STDDEV) {
       stddev = statistic.data;
+      is_stddev_set = true;
     } else if (statistic.data_type == StatisticDataType::STATISTICS_DATA_TYPE_SAMPLE_COUNT) {
       statistic_values[StatisticValuesType::SAMPLE_COUNT] = statistic.data;
     }
@@ -186,37 +188,41 @@ int MetricsCollector::RecordMetrics(
     statistic_values.erase(StatisticValuesType::SUM);
   }
 
-  // create a MetricObject with message parameters to batch
-  MetricObject metric_object(
-    msg->metrics_source,
-    statistic_values,
-    msg->unit,
-    GetMetricDataEpochMillis(msg->window_start),
-    dimensions,
-    storage_resolution_.load()
-  );
+  if (!statistic_values.empty()) {
+    // create a MetricObject with message parameters to batch
+    MetricObject value_object(
+      msg->metrics_source,
+      statistic_values,
+      msg->unit,
+      GetMetricDataEpochMillis(msg->window_start),
+      dimensions,
+      storage_resolution_.load()
+    );
 
-  bool batched = metric_service_->batchData(metric_object);
-  if (!batched) {
-    AWS_LOGSTREAM_ERROR(__func__, "Failed to record metrics statistics message");
-  } else {
-    ++batched_count;
+    bool batched = metric_service_->batchData(value_object);
+    if (!batched) {
+      AWS_LOGSTREAM_ERROR(__func__, "Failed to record metrics statistics message");
+    } else {
+      ++batched_count;
+    }
   }
 
-  MetricObject stddev_object(
-    msg->metrics_source + "_stddev",
-    stddev,
-    msg->unit,
-    GetMetricDataEpochMillis(msg->window_start),
-    dimensions,
-    storage_resolution_.load()
-  );
+  if (is_stddev_set) {
+    MetricObject stddev_object(
+      msg->metrics_source + "_stddev",
+      stddev,
+      msg->unit,
+      GetMetricDataEpochMillis(msg->window_start),
+      dimensions,
+      storage_resolution_.load()
+    );
 
-  batched = metric_service_->batchData(stddev_object);
-  if (!batched) {
-    AWS_LOGSTREAM_ERROR(__func__, "Failed to record metrics stddev message");
-  } else {
-    ++batched_count;
+    bool batched = metric_service_->batchData(stddev_object);
+    if (!batched) {
+      AWS_LOGSTREAM_ERROR(__func__, "Failed to record metrics stddev message");
+    } else {
+      ++batched_count;
+    }
   }
 
   return batched_count;

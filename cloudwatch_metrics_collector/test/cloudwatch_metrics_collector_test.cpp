@@ -226,7 +226,7 @@ TEST_F(CloudwatchMetricsCollectorFixture, timerCallsMetricManagerService)
   .Times(::testing::AtLeast(num_msgs))
   .WillRepeatedly(::testing::Return(true));
 
-  ros_monitoring_msgs::msg::MetricData metric_data = BasicMonitoringData();
+  ros_monitoring_msgs::msg::MetricData metric_data = EmptyMonitoringData();
   SendMonitoringMessages(num_msgs, metric_data);
   for (int i = 0; i < num_msgs; i++) {
     rclcpp::spin_some(node_handle);
@@ -273,7 +273,7 @@ TEST_F(CloudwatchMetricsCollectorFixture, metricsRecordedNoDimension)
     .WillOnce(::testing::Return(true));
   }
 
-  ros_monitoring_msgs::msg::MetricData metric_data = BasicMonitoringData();
+  ros_monitoring_msgs::msg::MetricData metric_data = EmptyMonitoringData();
   SendMonitoringMessages(num_msgs, metric_data);
   rclcpp::spin_some(node_handle);
 }
@@ -308,7 +308,7 @@ TEST_F(CloudwatchMetricsCollectorFixture, metricRecordedWithDimension)
 
   Initialize(expected_dim, topics);
 
-  ros_monitoring_msgs::msg::MetricData metric_data = BasicMonitoringData();
+  ros_monitoring_msgs::msg::MetricData metric_data = EmptyMonitoringData();
   ros_monitoring_msgs::msg::MetricDimension metric_dimension = ros_monitoring_msgs::msg::MetricDimension();
   metric_dimension.name = metric_dimension_name;
   metric_dimension.value = metric_dimension_value;
@@ -350,7 +350,7 @@ TEST_F(CloudwatchMetricsCollectorFixture, metricRecordedWithDefaultDimensions)
   default_metric_dims.emplace(metric_dimension_name, metric_dimension_value);
   Initialize(default_metric_dims, topics);
 
-  ros_monitoring_msgs::msg::MetricData metric_data = BasicMonitoringData();
+  ros_monitoring_msgs::msg::MetricData metric_data = EmptyMonitoringData();
 
   SendMonitoringMessages(num_msgs, metric_data);
   rclcpp::spin_some(node_handle);
@@ -379,7 +379,7 @@ TEST_F(CloudwatchMetricsCollectorFixture, customTopicsListened)
   .WillOnce(::testing::Return(true));
 
   ros_monitoring_msgs::msg::MetricList metric_list_msg = ros_monitoring_msgs::msg::MetricList();
-  ros_monitoring_msgs::msg::MetricData metric_data = BasicMonitoringData();
+  ros_monitoring_msgs::msg::MetricData metric_data = EmptyMonitoringData();
 
   rclcpp::Publisher<ros_monitoring_msgs::msg::MetricList>::SharedPtr metrics_pub0 =
     node_handle->create_publisher<ros_monitoring_msgs::msg::MetricList>(topics[0].topic_name, 1);

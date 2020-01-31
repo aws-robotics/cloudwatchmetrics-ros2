@@ -110,124 +110,135 @@ protected:
 
 constexpr char MetricsCollectorFixture::kTestMetricsNamespace[];
 
-TEST_F(MetricsCollectorFixture, RecordRosMonitoringMessages)
+TEST_F(MetricsCollectorFixture, RecordRosMonitoringMessage)
 {
-  std::random_device rd;
-  std::mt19937 gen(rd());
-  std::uniform_real_distribution<> dist(0.0, 100.0);
-
-  std::array<ros_monitoring_msgs::msg::MetricData, 2> metric_data = {{
-    BasicMonitoringData(),
-    BasicMonitoringData()
-  }};
-  for (auto & data : metric_data) {
-    data.value = dist(gen);
-  }
+  ros_monitoring_msgs::msg::MetricData metric_data = EmptyMonitoringData();
+  metric_data.value = 9001.0;
 
   auto metric_list = std::make_unique<ros_monitoring_msgs::msg::MetricList>();
-  for (const auto & data : metric_data) {
-    metric_list->metrics.push_back(data);
-  }
+  metric_list->metrics.push_back(metric_data);
 
-  size_t num_batched = metrics_collector_.RecordMetrics(std::move(metric_list));
-  ASSERT_EQ(metric_data.size(), num_batched);
+  int num_batched = metrics_collector_.RecordMetrics(std::move(metric_list));
+  ASSERT_EQ(1, num_batched);
 
   const auto & metric_objs = mock_metric_service_->GetMetricObjects();
-  ASSERT_EQ(metric_data.size(), metric_objs.size());
+  ASSERT_EQ(static_cast<size_t>(num_batched), metric_objs.size());
 
-  for (size_t i = 0; i < metric_data.size(); ++i) {
-    EXPECT_EQ(metric_data[i].metric_name, metric_objs[i].metric_name);
-    EXPECT_EQ(metric_data[i].unit, metric_objs[i].unit);
-    if (std::isnan(metric_data[i].value)) {
-      EXPECT_TRUE(std::isnan(metric_objs[i].value));
-    } else {
-      EXPECT_DOUBLE_EQ(metric_data[i].value, metric_objs[i].value);
-    }
-    EXPECT_EQ(MetricsCollector::GetMetricDataEpochMillis(metric_data[i].time_stamp), metric_objs[i].timestamp);
+  EXPECT_EQ(metric_data.metric_name, metric_objs[0].metric_name);
+  EXPECT_EQ(metric_data.unit, metric_objs[0].unit);
+  EXPECT_DOUBLE_EQ(metric_data.value, metric_objs[0].value);
+  EXPECT_EQ(MetricsCollector::GetMetricDataEpochMillis(metric_data.time_stamp), metric_objs[0].timestamp);
 
-    std::map<std::string, std::string> dimensions;
-    for (const auto & dimension : metric_data[i].dimensions) {
-      dimensions[dimension.name] = dimension.value;
-    }
-    EXPECT_EQ(dimensions, metric_objs[i].dimensions);
+  std::map<std::string, std::string> dimensions;
+  for (const auto & dimension : metric_data.dimensions) {
+    dimensions[dimension.name] = dimension.value;
   }
+  EXPECT_EQ(dimensions, metric_objs[0].dimensions);
 }
 
-TEST_F(MetricsCollectorFixture, RecordMetricsMessages)
+TEST_F(MetricsCollectorFixture, RecordMetricsMessage)
 {
-  std::random_device rd;
-  std::mt19937 gen(rd());
-  std::uniform_real_distribution<> dist(0.0, 100.0);
-
-  std::array<metrics_statistics_msgs::msg::MetricsMessage, 2> metric_data = {{
-    BasicMetricsData(),
-    BasicMetricsData()
-  }};
-  for (auto & metric : metric_data) {
-    for (auto & statistic : metric.statistics) {
-      statistic.data = dist(gen);
-    }
+  metrics_statistics_msgs::msg::MetricsMessage metric_data = EmptyMetricsData();
+  for (auto & statistic : metric_data.statistics) {
+    statistic.data = 80.08;
   }
 
-  for (const auto & data : metric_data) {
-    auto msg = std::make_unique<metrics_statistics_msgs::msg::MetricsMessage>(data);
-    int num_batched = metrics_collector_.RecordMetrics(std::move(msg));
-    ASSERT_EQ(2, num_batched);
-  }
+  auto msg = std::make_unique<metrics_statistics_msgs::msg::MetricsMessage>(metric_data);
+  int num_batched = metrics_collector_.RecordMetrics(std::move(msg));
+  ASSERT_EQ(2, num_batched);
 
   const auto & metric_objs = mock_metric_service_->GetMetricObjects();
-  ASSERT_EQ(2 * metric_data.size(), metric_objs.size());
+  ASSERT_EQ(static_cast<size_t>(num_batched), metric_objs.size());
 
-  for (size_t i = 0; i < metric_data.size(); ++i) {
-    EXPECT_EQ(metric_data[i].measurement_source_name, metric_objs[2*i].dimensions.at("Measurement Source"));
-    EXPECT_EQ(metric_data[i].measurement_source_name, metric_objs[2*i+1].dimensions.at("Measurement Source"));
+  EXPECT_EQ(metric_data.measurement_source_name, metric_objs[0].dimensions.at("Measurement Source"));
+  EXPECT_EQ(metric_data.measurement_source_name, metric_objs[1].dimensions.at("Measurement Source"));
 
-    EXPECT_EQ(metric_data[i].metrics_source, metric_objs[2*i].metric_name);
-    EXPECT_EQ(metric_data[i].metrics_source+"_stddev", metric_objs[2*i+1].metric_name);
+  EXPECT_EQ(metric_data.metrics_source, metric_objs[0].metric_name);
+  EXPECT_EQ(metric_data.metrics_source+"_stddev", metric_objs[1].metric_name);
 
-    EXPECT_EQ(metric_data[i].unit, metric_objs[2*i].unit);
-    EXPECT_EQ(metric_data[i].unit, metric_objs[2*i+1].unit);
+  EXPECT_EQ(metric_data.unit, metric_objs[0].unit);
+  EXPECT_EQ(metric_data.unit, metric_objs[1].unit);
 
-    EXPECT_EQ(MetricsCollector::GetMetricDataEpochMillis(metric_data[i].window_start), metric_objs[2*i].timestamp);
-    EXPECT_EQ(MetricsCollector::GetMetricDataEpochMillis(metric_data[i].window_start), metric_objs[2*i+1].timestamp);
+  EXPECT_EQ(MetricsCollector::GetMetricDataEpochMillis(metric_data.window_start), metric_objs[0].timestamp);
+  EXPECT_EQ(MetricsCollector::GetMetricDataEpochMillis(metric_data.window_start), metric_objs[1].timestamp);
 
-    for (const auto & statistic : metric_data[i].statistics) {
-      if (statistic.data_type == StatisticDataType::STATISTICS_DATA_TYPE_AVERAGE) {
-        if (std::isnan(statistic.data)) {
-          EXPECT_TRUE(std::isnan(metric_objs[2*i].statistic_values.at(StatisticValuesType::SUM))
-            || std::isnan(metric_objs[2*i].statistic_values.at(StatisticValuesType::SAMPLE_COUNT)));
-        } else {
-          EXPECT_DOUBLE_EQ(statistic.data,
-            metric_objs[2*i].statistic_values.at(StatisticValuesType::SUM)
-            / metric_objs[2*i].statistic_values.at(StatisticValuesType::SAMPLE_COUNT));
-        }
-      } else if (statistic.data_type == StatisticDataType::STATISTICS_DATA_TYPE_MAXIMUM) {
-        if (std::isnan(statistic.data)) {
-          EXPECT_TRUE(std::isnan(metric_objs[2*i].statistic_values.at(StatisticValuesType::MAXIMUM)));
-        } else {
-          EXPECT_DOUBLE_EQ(statistic.data, metric_objs[2*i].statistic_values.at(StatisticValuesType::MAXIMUM));
-        }
-      } else if (statistic.data_type == StatisticDataType::STATISTICS_DATA_TYPE_MINIMUM) {
-        if (std::isnan(statistic.data)) {
-          EXPECT_TRUE(std::isnan(metric_objs[2*i].statistic_values.at(StatisticValuesType::MINIMUM)));
-        } else {
-          EXPECT_DOUBLE_EQ(statistic.data, metric_objs[2*i].statistic_values.at(StatisticValuesType::MINIMUM));
-        }
-      } else if (statistic.data_type == StatisticDataType::STATISTICS_DATA_TYPE_SAMPLE_COUNT) {
-        if (std::isnan(statistic.data)) {
-          EXPECT_TRUE(std::isnan(metric_objs[2*i].statistic_values.at(StatisticValuesType::SAMPLE_COUNT)));
-        } else {
-          EXPECT_DOUBLE_EQ(statistic.data, metric_objs[2*i].statistic_values.at(StatisticValuesType::SAMPLE_COUNT));
-        }
-      } else if (statistic.data_type == StatisticDataType::STATISTICS_DATA_TYPE_STDDEV) {
-        if (std::isnan(statistic.data)) {
-          EXPECT_TRUE(std::isnan(metric_objs[2*i+1].value));
-        } else {
-          EXPECT_DOUBLE_EQ(statistic.data, metric_objs[2*i+1].value);
-        }
-      }
+  for (const auto & statistic : metric_data.statistics) {
+    if (statistic.data_type == StatisticDataType::STATISTICS_DATA_TYPE_AVERAGE) {
+      EXPECT_DOUBLE_EQ(statistic.data, metric_objs[0].statistic_values.at(StatisticValuesType::SUM)
+        / metric_objs[0].statistic_values.at(StatisticValuesType::SAMPLE_COUNT));
+    } else if (statistic.data_type == StatisticDataType::STATISTICS_DATA_TYPE_MAXIMUM) {
+      EXPECT_DOUBLE_EQ(statistic.data, metric_objs[0].statistic_values.at(StatisticValuesType::MAXIMUM));
+    } else if (statistic.data_type == StatisticDataType::STATISTICS_DATA_TYPE_MINIMUM) {
+      EXPECT_DOUBLE_EQ(statistic.data, metric_objs[0].statistic_values.at(StatisticValuesType::MINIMUM));
+    } else if (statistic.data_type == StatisticDataType::STATISTICS_DATA_TYPE_SAMPLE_COUNT) {
+      EXPECT_DOUBLE_EQ(statistic.data, metric_objs[0].statistic_values.at(StatisticValuesType::SAMPLE_COUNT));
+    } else if (statistic.data_type == StatisticDataType::STATISTICS_DATA_TYPE_STDDEV) {
+      EXPECT_DOUBLE_EQ(statistic.data, metric_objs[1].value);
     }
-    EXPECT_TRUE(metric_objs[2*i+1].statistic_values.empty());
+  }
+  EXPECT_TRUE(metric_objs[1].statistic_values.empty());
+}
+
+TEST_F(MetricsCollectorFixture, RecordMetricsMessageWithStddevOnly)
+{
+  metrics_statistics_msgs::msg::MetricsMessage metric_data = EmptyMetricsData();
+  metric_data.statistics.erase(metric_data.statistics.begin() + 1, metric_data.statistics.end());
+  metric_data.statistics[0].data_type = StatisticDataType::STATISTICS_DATA_TYPE_STDDEV;
+  metric_data.statistics[0].data = 0.1234;
+
+  auto msg = std::make_unique<metrics_statistics_msgs::msg::MetricsMessage>(metric_data);
+  int num_batched = metrics_collector_.RecordMetrics(std::move(msg));
+  ASSERT_EQ(1, num_batched);
+
+  const auto & metric_objs = mock_metric_service_->GetMetricObjects();
+  ASSERT_EQ(static_cast<size_t>(num_batched), metric_objs.size());
+
+  EXPECT_EQ(metric_data.measurement_source_name, metric_objs[0].dimensions.at("Measurement Source"));
+  EXPECT_EQ(metric_data.metrics_source+"_stddev", metric_objs[0].metric_name);
+  EXPECT_EQ(metric_data.unit, metric_objs[0].unit);
+  EXPECT_EQ(MetricsCollector::GetMetricDataEpochMillis(metric_data.window_start), metric_objs[0].timestamp);
+  EXPECT_DOUBLE_EQ(metric_data.statistics[0].data, metric_objs[0].value);
+  EXPECT_TRUE(metric_objs[0].statistic_values.empty());
+}
+
+TEST_F(MetricsCollectorFixture, RecordMetricsMessageWithoutStddev)
+{
+  metrics_statistics_msgs::msg::MetricsMessage metric_data = EmptyMetricsData();
+  metric_data.statistics.erase(
+    std::remove_if(metric_data.statistics.begin(), metric_data.statistics.end(),
+      [](const metrics_statistics_msgs::msg::StatisticDataPoint & data_point) {
+        return data_point.data_type == StatisticDataType::STATISTICS_DATA_TYPE_STDDEV;
+      }),
+    metric_data.statistics.end());
+  for (auto & statistic : metric_data.statistics) {
+    statistic.data = 100.0;
+  }
+
+  auto msg = std::make_unique<metrics_statistics_msgs::msg::MetricsMessage>(metric_data);
+  int num_batched = metrics_collector_.RecordMetrics(std::move(msg));
+  ASSERT_EQ(1, num_batched);
+
+  const auto & metric_objs = mock_metric_service_->GetMetricObjects();
+  ASSERT_EQ(static_cast<size_t>(num_batched), metric_objs.size());
+
+  EXPECT_EQ(metric_data.measurement_source_name, metric_objs[0].dimensions.at("Measurement Source"));
+  EXPECT_EQ(metric_data.metrics_source, metric_objs[0].metric_name);
+  EXPECT_EQ(metric_data.unit, metric_objs[0].unit);
+  EXPECT_EQ(MetricsCollector::GetMetricDataEpochMillis(metric_data.window_start), metric_objs[0].timestamp);
+
+  for (const auto & statistic : metric_data.statistics) {
+    if (statistic.data_type == StatisticDataType::STATISTICS_DATA_TYPE_AVERAGE) {
+      EXPECT_DOUBLE_EQ(statistic.data, metric_objs[0].statistic_values.at(StatisticValuesType::SUM)
+        / metric_objs[0].statistic_values.at(StatisticValuesType::SAMPLE_COUNT));
+    } else if (statistic.data_type == StatisticDataType::STATISTICS_DATA_TYPE_MAXIMUM) {
+      EXPECT_DOUBLE_EQ(statistic.data, metric_objs[0].statistic_values.at(StatisticValuesType::MAXIMUM));
+    } else if (statistic.data_type == StatisticDataType::STATISTICS_DATA_TYPE_MINIMUM) {
+      EXPECT_DOUBLE_EQ(statistic.data, metric_objs[0].statistic_values.at(StatisticValuesType::MINIMUM));
+    } else if (statistic.data_type == StatisticDataType::STATISTICS_DATA_TYPE_SAMPLE_COUNT) {
+      EXPECT_DOUBLE_EQ(statistic.data, metric_objs[0].statistic_values.at(StatisticValuesType::SAMPLE_COUNT));
+    } else {
+      FAIL() << "Unexpected statistic data type" << statistic.data_type;
+    }
   }
 }
 
