@@ -26,8 +26,6 @@
 #include <aws_common/sdk_utils/parameter_reader.h>
 #include <cloudwatch_metrics_common/cloudwatch_options.h>
 
-using namespace Aws::Client;
-
 namespace Aws {
 namespace CloudWatchMetrics {
 namespace Utils {

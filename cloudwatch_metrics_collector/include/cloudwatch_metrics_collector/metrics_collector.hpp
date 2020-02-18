@@ -81,7 +81,7 @@ public:
                   const Aws::SDKOptions & sdk_options,
                   const Aws::CloudWatchMetrics::CloudWatchOptions & cloudwatch_options,
                   const std::vector<std::string> & topics,
-                  std::shared_ptr<MetricServiceFactory> metric_service_factory = std::make_shared<MetricServiceFactory>());
+                  const std::shared_ptr<MetricServiceFactory> & metric_service_factory = std::make_shared<MetricServiceFactory>());
 
   /**
    * Initialize the MetricsCollector with parameters read from the config file.

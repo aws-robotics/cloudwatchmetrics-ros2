@@ -24,7 +24,7 @@
 #include <cloudwatch_metrics_collector/metrics_collector_parameter_helper.hpp>
 #include <cloudwatch_metrics_common/cloudwatch_options.h>
 
-using namespace Aws::Client;
+using Aws::Client::ParameterPath;
 
 namespace Aws {
 namespace CloudWatchMetrics {

@@ -46,9 +46,6 @@
 #include <cloudwatch_metrics_common/metric_service.hpp>
 #include <cloudwatch_metrics_common/metric_service_factory.hpp>
 
-using namespace Aws::Client;
-using namespace Aws::Utils::Logging;
-using namespace Aws::CloudWatchMetrics::Utils;
 using metrics_statistics_msgs::msg::StatisticDataType;
 
 namespace Aws {
@@ -63,15 +60,15 @@ void MetricsCollector::Initialize(std::string metric_namespace,
                          const Aws::SDKOptions & sdk_options,
                          const Aws::CloudWatchMetrics::CloudWatchOptions & cloudwatch_options,
                          const std::vector<std::string> & topics,
-                         std::shared_ptr<MetricServiceFactory> metric_service_factory) {
+                         const std::shared_ptr<MetricServiceFactory> & metric_service_factory) {
 
   std::vector<TopicInfo> topic_infos;
   topic_infos.reserve(topics.size());
-for (const auto & topic : topics) {
+  for (const auto & topic : topics) {
     topic_infos.push_back(TopicInfo{topic, TopicType::ROS_MONITORING_MSGS});
   }
   Initialize(std::move(metric_namespace), default_dimensions, storage_resolution, std::move(node), config,
-    sdk_options, cloudwatch_options, topic_infos, std::move(metric_service_factory));
+    sdk_options, cloudwatch_options, topic_infos, metric_service_factory);
 }
 
 void MetricsCollector::Initialize(std::string metric_namespace,
