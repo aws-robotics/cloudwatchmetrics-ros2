@@ -37,11 +37,11 @@ using metrics_statistics_msgs::msg::StatisticDataType;
 class MetricServiceMock : public MetricService
 {
 public:
-  MetricServiceMock(const std::string & metrics_namespace) : MetricService(
+  explicit MetricServiceMock(const std::string & metrics_namespace) : MetricService(
     std::make_shared<MetricPublisher>(metrics_namespace, Aws::Client::ClientConfiguration()),
     std::make_shared<MetricBatcher>()) {}
 
-  bool batchData(const MetricObject & data_to_batch)
+  bool batchData(const MetricObject & data_to_batch) override
   {
     metric_objects_.push_back(data_to_batch);
     return true;
@@ -59,14 +59,14 @@ private:
 class MetricServiceFactoryMock : public MetricServiceFactory
 {
 public:
-  MetricServiceFactoryMock(std::shared_ptr<MetricService> metric_service)
+  explicit MetricServiceFactoryMock(std::shared_ptr<MetricService> metric_service)
     : mock_metric_service_(std::move(metric_service)) {}
 
   std::shared_ptr<MetricService> createMetricService(
     const std::string & /*metrics_namespace*/,
     const Aws::Client::ClientConfiguration & /*client_config*/,
     const Aws::SDKOptions & /*sdk_options*/,
-    const CloudWatchOptions & /*cloudwatch_option*/)
+    const CloudWatchOptions & /*cloudwatch_option*/) override
   {
     return mock_metric_service_;
   }
@@ -77,7 +77,7 @@ private:
 
 class MetricsCollectorFixture : public ::testing::Test
 {
-  void SetUp()
+  void SetUp() override
   {
     mock_metric_service_ = std::make_shared<MetricServiceMock>(kTestMetricsNamespace);
     mock_metric_service_factory_ = std::make_shared<MetricServiceFactoryMock>(mock_metric_service_);

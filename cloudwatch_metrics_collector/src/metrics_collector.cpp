@@ -17,6 +17,7 @@
 #include <map>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <aws/core/Aws.h>
@@ -65,11 +66,12 @@ void MetricsCollector::Initialize(std::string metric_namespace,
                          std::shared_ptr<MetricServiceFactory> metric_service_factory) {
 
   std::vector<TopicInfo> topic_infos;
-  for (const auto & topic : topics) {
+  topic_infos.reserve(topics.size());
+for (const auto & topic : topics) {
     topic_infos.push_back(TopicInfo{topic, TopicType::ROS_MONITORING_MSGS});
   }
-  Initialize(metric_namespace, default_dimensions, storage_resolution, node, config,
-    sdk_options, cloudwatch_options, topic_infos, metric_service_factory);
+  Initialize(std::move(metric_namespace), default_dimensions, storage_resolution, std::move(node), config,
+    sdk_options, cloudwatch_options, topic_infos, std::move(metric_service_factory));
 }
 
 void MetricsCollector::Initialize(std::string metric_namespace,
@@ -80,12 +82,12 @@ void MetricsCollector::Initialize(std::string metric_namespace,
                          const Aws::SDKOptions & sdk_options,
                          const Aws::CloudWatchMetrics::CloudWatchOptions & cloudwatch_options,
                          const std::vector<TopicInfo> & topics,
-                         std::shared_ptr<MetricServiceFactory> metric_service_factory) {
+                         const std::shared_ptr<MetricServiceFactory>& metric_service_factory) {
 
-  this->metric_namespace_ = metric_namespace;
+  this->metric_namespace_ = std::move(metric_namespace);
   this->default_dimensions_ = default_dimensions;
   this->storage_resolution_.store(storage_resolution);
-  this->node_ = node;
+  this->node_ = std::move(node);
   this->metric_service_ = metric_service_factory->createMetricService(this->metric_namespace_,
                                                                       config,
                                                                       sdk_options,
@@ -125,12 +127,12 @@ int MetricsCollector::RecordMetrics(
 
     std::map<std::string, std::string> dimensions;
 
-    for (auto it = default_dimensions_.begin(); it != default_dimensions_.end(); ++it) {
-      dimensions.emplace(it->first, it->second);  // ignore the return, if we get a duplicate we're
+    for (auto & default_dimension : default_dimensions_) {
+      dimensions.emplace(default_dimension.first, default_dimension.second);  // ignore the return, if we get a duplicate we're
                                                   // going to stick with the first one
     }
-    for (auto it = metric_msg->dimensions.begin(); it != metric_msg->dimensions.end(); ++it) {
-      dimensions.emplace((*it).name, (*it).value);  // ignore the return, if we get a duplicate
+    for (auto & dimension : metric_msg->dimensions) {
+      dimensions.emplace(dimension.name, dimension.value);  // ignore the return, if we get a duplicate
                                                     // we're going to stick with the first one
     }
     AWS_LOGSTREAM_DEBUG(__func__, "Recording metric with name=[" << metric_msg->metric_name << "]");
@@ -258,7 +260,7 @@ bool MetricsCollector::shutdown() {
   return is_shutdown;
 }
 
-bool MetricsCollector::checkIfOnline(std::shared_ptr<std_srvs::srv::Trigger::Request> , std::shared_ptr<std_srvs::srv::Trigger::Response> response) {
+bool MetricsCollector::checkIfOnline(const std::shared_ptr<std_srvs::srv::Trigger::Request>& , const std::shared_ptr<std_srvs::srv::Trigger::Response>& response) {
 
   AWS_LOGSTREAM_DEBUG(__func__, "received request");
 

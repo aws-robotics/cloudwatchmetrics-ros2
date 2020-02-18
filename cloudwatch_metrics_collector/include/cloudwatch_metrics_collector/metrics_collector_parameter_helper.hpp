@@ -87,7 +87,7 @@ const std::set<int> kNodeParamMetricDatumStorageResolutionValidValues = {1, 60};
  * as returned by \p parameter_reader
  */
 void ReadPublishFrequency(
-        std::shared_ptr<Aws::Client::ParameterReaderInterface> parameter_reader,
+        const std::shared_ptr<Aws::Client::ParameterReaderInterface>& parameter_reader,
         int & publish_frequency);
 
 /**
@@ -97,7 +97,7 @@ void ReadPublishFrequency(
  * @return
  */
 void ReadMetricNamespace(
-        std::shared_ptr<Aws::Client::ParameterReaderInterface> parameter_reader,
+        const std::shared_ptr<Aws::Client::ParameterReaderInterface>& parameter_reader,
         std::string & metric_namespace);
 
 /**
@@ -108,7 +108,7 @@ void ReadMetricNamespace(
  * @return
  */
 void ReadMetricDimensions(
-        std::shared_ptr<Aws::Client::ParameterReaderInterface> parameter_reader,
+        const std::shared_ptr<Aws::Client::ParameterReaderInterface>& parameter_reader,
         Aws::String & dimensions_param,
         std::map<std::string, std::string> & metric_dims);
 /**
@@ -118,7 +118,7 @@ void ReadMetricDimensions(
  * @return
  */
 void ReadStorageResolution(
-  std::shared_ptr<Aws::Client::ParameterReaderInterface> parameter_reader,
+  const std::shared_ptr<Aws::Client::ParameterReaderInterface>& parameter_reader,
   int & storage_resolution);
 
 /**
@@ -128,7 +128,7 @@ void ReadStorageResolution(
  * @return
  */
 void ReadTopics(
-  std::shared_ptr<Aws::Client::ParameterReaderInterface> parameter_reader,
+  const std::shared_ptr<Aws::Client::ParameterReaderInterface>& parameter_reader,
   std::vector<TopicInfo> & topics);
 
 /**
@@ -140,7 +140,7 @@ void ReadTopics(
  * as returned by \p parameter_reader
  */
 void ReadCloudWatchOptions(
-  std::shared_ptr<Aws::Client::ParameterReaderInterface> parameter_reader,
+  const std::shared_ptr<Aws::Client::ParameterReaderInterface>& parameter_reader,
   Aws::CloudWatchMetrics::CloudWatchOptions & cloudwatch_options);
 
 /**
@@ -152,7 +152,7 @@ void ReadCloudWatchOptions(
  * as returned by \p parameter_reader
  */
 void ReadUploaderOptions(
-  std::shared_ptr<Aws::Client::ParameterReaderInterface> parameter_reader,
+  const std::shared_ptr<Aws::Client::ParameterReaderInterface>& parameter_reader,
   Aws::DataFlow::UploaderOptions & uploader_options);
 
 /**
@@ -164,7 +164,7 @@ void ReadUploaderOptions(
  * as returned by \p parameter_reader
  */
 void ReadFileManagerStrategyOptions(
-  std::shared_ptr<Aws::Client::ParameterReaderInterface> parameter_reader,
+  const std::shared_ptr<Aws::Client::ParameterReaderInterface>& parameter_reader,
   Aws::FileManagement::FileManagerStrategyOptions & file_manager_strategy_options);
 
 /**
@@ -178,7 +178,7 @@ void ReadFileManagerStrategyOptions(
  * as returned by \p parameter_reader
  */
 void ReadOption(
-  std::shared_ptr<Aws::Client::ParameterReaderInterface> parameter_reader,
+  const std::shared_ptr<Aws::Client::ParameterReaderInterface>& parameter_reader,
   const std::string & option_key,
   const std::string & default_value,
   std::string & option_value);
@@ -194,7 +194,7 @@ void ReadOption(
  * as returned by \p parameter_reader
  */
 void ReadOption(
-  std::shared_ptr<Aws::Client::ParameterReaderInterface> parameter_reader,
+  const std::shared_ptr<Aws::Client::ParameterReaderInterface>& parameter_reader,
   const std::string & option_key,
   const size_t & default_value,
   size_t & option_value);

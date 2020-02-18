@@ -39,7 +39,7 @@ class MetricsCollector : public Service
 public:
 
   MetricsCollector() = default;
-  ~MetricsCollector() = default;
+  ~MetricsCollector() override = default;
 
   /**
    * Accept input ros_monitoring_msgs::msg::MetricList message to be batched for publishing.
@@ -102,7 +102,7 @@ public:
                   const Aws::SDKOptions & sdk_options,
                   const Aws::CloudWatchMetrics::CloudWatchOptions & cloudwatch_options,
                   const std::vector<TopicInfo> & topics,
-                  std::shared_ptr<MetricServiceFactory> metric_service_factory = std::make_shared<MetricServiceFactory>());
+                  const std::shared_ptr<MetricServiceFactory>& metric_service_factory = std::make_shared<MetricServiceFactory>());
 
   void SubscribeAllTopics();
 
@@ -116,8 +116,8 @@ public:
    * @param response output response
    * @return true if the request was handled successfully, false otherwise
    */
-  bool checkIfOnline(std::shared_ptr<std_srvs::srv::Trigger::Request> request,
-                     std::shared_ptr<std_srvs::srv::Trigger::Response> response);
+  bool checkIfOnline(const std::shared_ptr<std_srvs::srv::Trigger::Request>& request,
+                     const std::shared_ptr<std_srvs::srv::Trigger::Response>& response);
 
   /**
    * Gets the timestamp for the input metric message as milliseconds since epoch
@@ -128,7 +128,7 @@ private:
 
   std::string metric_namespace_;
   std::map<std::string, std::string> default_dimensions_;
-  std::atomic<int> storage_resolution_;
+  std::atomic<int> storage_resolution_{};
   std::shared_ptr<MetricService> metric_service_;
   std::vector<std::shared_ptr<rclcpp::SubscriptionBase>> subscriptions_;
   rclcpp::Node::SharedPtr node_;
