@@ -15,20 +15,18 @@
 
 #pragma once
 
-#include <map>
-#include <string>
-
 #include <aws_common/sdk_utils/logging/aws_log_system.h>
-#include <builtin_interfaces/msg/time.hpp>
-#include <metrics_statistics_msgs/msg/metrics_message.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <ros_monitoring_msgs/msg/metric_list.hpp>
-#include <std_srvs/srv/empty.hpp>
+#include <ros_monitoring_msgs/msg/metric_data.hpp>
 #include <std_srvs/srv/trigger.hpp>
+#include <std_srvs/srv/empty.hpp>
 
-#include <cloudwatch_metrics_collector/metrics_collector_parameter_helper.hpp>
 #include <cloudwatch_metrics_common/metric_service.hpp>
 #include <cloudwatch_metrics_common/metric_service_factory.hpp>
+
+#include <string>
+#include <map>
 
 namespace Aws {
 namespace CloudWatchMetrics {
@@ -42,20 +40,12 @@ public:
   ~MetricsCollector() = default;
 
   /**
-   * Accept input ros_monitoring_msgs::msg::MetricList message to be batched for publishing.
+   * Accept input metric message to be batched for publishing.
    *
    * @param metric_list_msg
    * @return the number of metrics successfully batched
    */
-  int RecordMetrics(ros_monitoring_msgs::msg::MetricList::UniquePtr metric_list_msg);
-
-  /**
-   * Accept input metrics_statistics_msgs::msg::MetricsMessage message to be batched for publishing.
-   *
-   * @param msg
-   * @return the number of metrics successfully batched
-   */
-  int RecordMetrics(metrics_statistics_msgs::msg::MetricsMessage::UniquePtr msg);
+  int RecordMetrics(const ros_monitoring_msgs::msg::MetricList::UniquePtr metric_list_msg);
 
   /**
    * Force all batched data to be published to CloudWatch.
@@ -70,38 +60,16 @@ public:
    * @param storage_resolution
    * @param config
    * @param sdk_options
-   * @param topics
    * @param metric_service_factory
    */
   void Initialize(std::string metric_namespace,
-                  const std::map<std::string, std::string> & default_dimensions,
+                  std::map<std::string, std::string> & default_dimensions,
                   int storage_resolution,
                   rclcpp::Node::SharedPtr node,
                   const Aws::Client::ClientConfiguration & config,
                   const Aws::SDKOptions & sdk_options,
                   const Aws::CloudWatchMetrics::CloudWatchOptions & cloudwatch_options,
-                  const std::vector<std::string> & topics,
-                  std::shared_ptr<MetricServiceFactory> metric_service_factory = std::make_shared<MetricServiceFactory>());
-
-  /**
-   * Initialize the MetricsCollector with parameters read from the config file.
-   *
-   * @param metric_namespace
-   * @param default_dimensions
-   * @param storage_resolution
-   * @param config
-   * @param sdk_options
-   * @param topics
-   * @param metric_service_factory
-   */
-  void Initialize(std::string metric_namespace,
-                  const std::map<std::string, std::string> & default_dimensions,
-                  int storage_resolution,
-                  rclcpp::Node::SharedPtr node,
-                  const Aws::Client::ClientConfiguration & config,
-                  const Aws::SDKOptions & sdk_options,
-                  const Aws::CloudWatchMetrics::CloudWatchOptions & cloudwatch_options,
-                  const std::vector<TopicInfo> & topics,
+                  const std::vector<std::string>&  topics,
                   std::shared_ptr<MetricServiceFactory> metric_service_factory = std::make_shared<MetricServiceFactory>());
 
   void SubscribeAllTopics();
@@ -116,13 +84,12 @@ public:
    * @param response output response
    * @return true if the request was handled successfully, false otherwise
    */
-  bool checkIfOnline(std::shared_ptr<std_srvs::srv::Trigger::Request> request,
-                     std::shared_ptr<std_srvs::srv::Trigger::Response> response);
+  bool checkIfOnline(std::shared_ptr<std_srvs::srv::Trigger::Request> request, std::shared_ptr<std_srvs::srv::Trigger::Response> response);
 
   /**
    * Gets the timestamp for the input metric message as milliseconds since epoch
    */
-  static int64_t GetMetricDataEpochMillis(const builtin_interfaces::msg::Time & time_stamp);
+  static int64_t GetMetricDataEpochMillis(const ros_monitoring_msgs::msg::MetricData & metric_msg);
 
 private:
 
@@ -130,9 +97,9 @@ private:
   std::map<std::string, std::string> default_dimensions_;
   std::atomic<int> storage_resolution_;
   std::shared_ptr<MetricService> metric_service_;
-  std::vector<std::shared_ptr<rclcpp::SubscriptionBase>> subscriptions_;
+  std::vector<std::shared_ptr<rclcpp::Subscription<ros_monitoring_msgs::msg::MetricList>>> subscriptions_;
   rclcpp::Node::SharedPtr node_;
-  std::vector<Aws::CloudWatchMetrics::Utils::TopicInfo> topics_;
+  std::vector<std::string> topics_;
 };
 
 }  // namespace Utils
