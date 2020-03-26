@@ -28,7 +28,6 @@ find_package(aws_ros2_common REQUIRED)
 find_package(cloudwatch_metrics_common REQUIRED)
 find_package(dataflow_lite REQUIRED)
 find_package(file_management REQUIRED)
-find_package(metrics_statistics_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rmw_implementation REQUIRED)
 find_package(ros_monitoring_msgs REQUIRED)
@@ -49,7 +48,6 @@ set(cloudwatch_metrics_ros2_INCS
   ${cloudwatch_metrics_common_INCLUDE_DIRS}
   ${dataflow_lite_INCLUDE_DIRS}
   ${file_management_INCLUDE_DIRS}
-  ${metrics_statistics_msgs_INCLUDE_DIRS}
   ${rclcpp_INCLUDE_DIRS}
   ${rmw_implementation_INCLUDE_DIRS}
   ${ros_monitoring_msgs_INCLUDE_DIRS}
@@ -66,7 +64,6 @@ set(cloudwatch_metrics_ros2_LIBS
   ${cloudwatch_metrics_common_LIBRARIES}
   ${dataflow_lite_LIBRARIES}
   ${file_management_LIBRARIES}
-  ${metrics_statistics_msgs_LIBRARIES}
   ${rclcpp_LIBRARIES}
   ${rmw_implementation_LIBRARIES}
   ${ros_monitoring_msgs_LIBRARIES}
@@ -113,7 +110,6 @@ ament_export_dependencies(aws_ros2_common)
 ament_export_dependencies(cloudwatch_metrics_common)
 ament_export_dependencies(dataflow_lite)
 ament_export_dependencies(file_management)
-ament_export_dependencies(metrics_statistics_msgs)
 ament_export_dependencies(rclcpp)
 ament_export_dependencies(rmw_implementation)
 ament_export_dependencies(ros_monitoring_msgs)

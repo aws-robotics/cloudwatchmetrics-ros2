@@ -111,7 +111,7 @@ protected:
   }
 
   void Initialize(const std::map<std::string, std::string> & metric_dimensions,
-                  const std::vector<TopicInfo> & topics)
+                  const std::vector<std::string> & topics)
   {
     rclcpp::init(test_argc, test_argv);
     metrics_collector = std::make_shared<MetricsCollector>();
@@ -177,7 +177,7 @@ TEST_F(CloudwatchMetricsCollectorFixture, Sanity)
 TEST_F(CloudwatchMetricsCollectorFixture, TestInitialize)
 {
   std::map<std::string, std::string> metric_dimensions;
-  std::vector<TopicInfo> topics = {{kMetricsTopic, TopicType::ROS_MONITORING_MSGS}};
+  std::vector<std::string> topics = {kMetricsTopic};
   Initialize(metric_dimensions, topics);
 }
 
@@ -211,7 +211,7 @@ INSTANTIATE_TEST_CASE_P(getMetricDataEpochMillisTest, GetMetricDataEpochMillisFi
 TEST_F(CloudwatchMetricsCollectorFixture, timerCallsMetricManagerService)
 {
   std::map<std::string, std::string> metric_dimensions;
-  std::vector<TopicInfo> topics = {{kMetricsTopic, TopicType::ROS_MONITORING_MSGS}};
+  std::vector<std::string> topics = {kMetricsTopic};
   Initialize(metric_dimensions, topics);
 
   int num_msgs = 3;
@@ -249,7 +249,7 @@ MATCHER_P(metricsAreEqual, toTest, "")
 TEST_F(CloudwatchMetricsCollectorFixture, metricsRecordedNoDimension)
 {
   std::map<std::string, std::string> metric_dimensions;
-  std::vector<TopicInfo> topics = {{kMetricsTopic, TopicType::ROS_MONITORING_MSGS}};
+  std::vector<std::string> topics = {kMetricsTopic};
   Initialize(metric_dimensions, topics);
 
   int num_msgs = 3;
@@ -282,7 +282,7 @@ TEST_F(CloudwatchMetricsCollectorFixture, metricRecordedWithDimension)
   const std::string metric_dimension_name = "CWMetricsNodeTestDim1";
   const std::string metric_dimension_value = "CWMetricsNodeTestDim1Value";
 
-  std::vector<TopicInfo> topics = {{kMetricsTopic, TopicType::ROS_MONITORING_MSGS}};
+  std::vector<std::string> topics = {kMetricsTopic};
   std::map<std::string, std::string> expected_dim;
   expected_dim[metric_dimension_name] = metric_dimension_value;
 
@@ -322,7 +322,7 @@ TEST_F(CloudwatchMetricsCollectorFixture, metricRecordedWithDefaultDimensions)
   const std::string metric_dimension_name = "CWMetricsNodeTestDim1";
   const std::string metric_dimension_value = "CWMetricsNodeTestDim1Value";
 
-  std::vector<TopicInfo> topics = {{kMetricsTopic, TopicType::ROS_MONITORING_MSGS}};
+  std::vector<std::string> topics = {kMetricsTopic};
   std::map<std::string, std::string> expected_dim;
   expected_dim[metric_dimension_name] = metric_dimension_value;
 
@@ -357,10 +357,7 @@ TEST_F(CloudwatchMetricsCollectorFixture, metricRecordedWithDefaultDimensions)
 TEST_F(CloudwatchMetricsCollectorFixture, customTopicsListened)
 {
   std::map<std::string, std::string> default_metric_dims;
-  std::vector<TopicInfo> topics = {
-    {"metrics_topic0", TopicType::ROS_MONITORING_MSGS},
-    {"metrics_topic1", TopicType::ROS_MONITORING_MSGS}
-  };
+  std::vector<std::string> topics = {"metrics_topic0", "metrics_topic1"};
   Initialize(default_metric_dims, topics);
 
   MetricObject m01 = MetricObject {kMetricName, 0.0, kMetricUnit, 1234, default_metric_dims, 60};
@@ -380,7 +377,7 @@ TEST_F(CloudwatchMetricsCollectorFixture, customTopicsListened)
   ros_monitoring_msgs::msg::MetricData metric_data = EmptyMonitoringData();
 
   rclcpp::Publisher<ros_monitoring_msgs::msg::MetricList>::SharedPtr metrics_pub0 =
-    node_handle->create_publisher<ros_monitoring_msgs::msg::MetricList>(topics[0].topic_name, 1);
+    node_handle->create_publisher<ros_monitoring_msgs::msg::MetricList>(topics[0], 1);
   metric_data.value = 0;
   metric_data.time_stamp = node_handle->now();
   metric_list_msg.metrics.clear();
@@ -389,7 +386,7 @@ TEST_F(CloudwatchMetricsCollectorFixture, customTopicsListened)
   rclcpp::spin_some(node_handle);
 
   rclcpp::Publisher<ros_monitoring_msgs::msg::MetricList>::SharedPtr metrics_pub1 =
-    node_handle->create_publisher<ros_monitoring_msgs::msg::MetricList>(topics[1].topic_name, 1);
+    node_handle->create_publisher<ros_monitoring_msgs::msg::MetricList>(topics[1], 1);
   metric_data.value = 1;
   metric_data.time_stamp = node_handle->now();
   metric_list_msg.metrics.clear();

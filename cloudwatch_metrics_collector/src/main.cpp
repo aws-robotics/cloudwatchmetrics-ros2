@@ -78,7 +78,7 @@ int main(int argc, char * argv[])
   std::string metric_namespace;
   Aws::String dimensions_param;
   std::map<std::string, std::string> default_metric_dims;
-  std::vector<Aws::CloudWatchMetrics::Utils::TopicInfo> topics;
+  std::vector<std::string> topics;
 
   // Load the storage resolution
   int storage_resolution = kNodeDefaultMetricDatumStorageResolution;

@@ -19,7 +19,6 @@
 #include <random>
 #include <vector>
 
-#include <metrics_statistics_msgs/msg/metrics_message.hpp>
 #include <ros_monitoring_msgs/msg/metric_data.hpp>
 
 #include <cloudwatch_metrics_common/metric_service.hpp>
@@ -32,7 +31,6 @@
 
 using namespace Aws::CloudWatchMetrics::Utils;
 using namespace Aws::CloudWatchMetrics;
-using metrics_statistics_msgs::msg::StatisticDataType;
 
 class MetricServiceMock : public MetricService
 {
@@ -100,7 +98,7 @@ protected:
   Aws::Client::ClientConfiguration client_config_;
   Aws::SDKOptions sdk_options_;
   Aws::CloudWatchMetrics::CloudWatchOptions cloudwatch_options_;
-  std::vector<TopicInfo> topics_;
+  std::vector<std::string> topics_;
 
   std::map<std::string, std::string> default_dimensions_;
   std::shared_ptr<MetricServiceMock> mock_metric_service_;
@@ -134,112 +132,6 @@ TEST_F(MetricsCollectorFixture, RecordRosMonitoringMessage)
     dimensions[dimension.name] = dimension.value;
   }
   EXPECT_EQ(dimensions, metric_objs[0].dimensions);
-}
-
-TEST_F(MetricsCollectorFixture, RecordMetricsMessage)
-{
-  metrics_statistics_msgs::msg::MetricsMessage metric_data = EmptyMetricsData();
-  for (auto & statistic : metric_data.statistics) {
-    statistic.data = 80.08;
-  }
-
-  auto msg = std::make_unique<metrics_statistics_msgs::msg::MetricsMessage>(metric_data);
-  int num_batched = metrics_collector_.RecordMetrics(std::move(msg));
-  ASSERT_EQ(2, num_batched);
-
-  const auto & metric_objs = mock_metric_service_->GetMetricObjects();
-  ASSERT_EQ(static_cast<size_t>(num_batched), metric_objs.size());
-
-  EXPECT_EQ(metric_data.measurement_source_name, metric_objs[0].dimensions.at("Measurement Source"));
-  EXPECT_EQ(metric_data.measurement_source_name, metric_objs[1].dimensions.at("Measurement Source"));
-
-  EXPECT_EQ(metric_data.metrics_source, metric_objs[0].metric_name);
-  EXPECT_EQ(metric_data.metrics_source+"_stddev", metric_objs[1].metric_name);
-
-  EXPECT_EQ(metric_data.unit, metric_objs[0].unit);
-  EXPECT_EQ(metric_data.unit, metric_objs[1].unit);
-
-  EXPECT_EQ(MetricsCollector::GetMetricDataEpochMillis(metric_data.window_start), metric_objs[0].timestamp);
-  EXPECT_EQ(MetricsCollector::GetMetricDataEpochMillis(metric_data.window_start), metric_objs[1].timestamp);
-
-  for (const auto & statistic : metric_data.statistics) {
-    if (statistic.data_type == StatisticDataType::STATISTICS_DATA_TYPE_AVERAGE) {
-      EXPECT_DOUBLE_EQ(statistic.data, metric_objs[0].statistic_values.at(StatisticValuesType::SUM)
-        / metric_objs[0].statistic_values.at(StatisticValuesType::SAMPLE_COUNT));
-    } else if (statistic.data_type == StatisticDataType::STATISTICS_DATA_TYPE_MAXIMUM) {
-      EXPECT_DOUBLE_EQ(statistic.data, metric_objs[0].statistic_values.at(StatisticValuesType::MAXIMUM));
-    } else if (statistic.data_type == StatisticDataType::STATISTICS_DATA_TYPE_MINIMUM) {
-      EXPECT_DOUBLE_EQ(statistic.data, metric_objs[0].statistic_values.at(StatisticValuesType::MINIMUM));
-    } else if (statistic.data_type == StatisticDataType::STATISTICS_DATA_TYPE_SAMPLE_COUNT) {
-      EXPECT_DOUBLE_EQ(statistic.data, metric_objs[0].statistic_values.at(StatisticValuesType::SAMPLE_COUNT));
-    } else if (statistic.data_type == StatisticDataType::STATISTICS_DATA_TYPE_STDDEV) {
-      EXPECT_DOUBLE_EQ(statistic.data, metric_objs[1].value);
-    }
-  }
-  EXPECT_TRUE(metric_objs[1].statistic_values.empty());
-}
-
-TEST_F(MetricsCollectorFixture, RecordMetricsMessageWithStddevOnly)
-{
-  metrics_statistics_msgs::msg::MetricsMessage metric_data = EmptyMetricsData();
-  metric_data.statistics.erase(metric_data.statistics.begin() + 1, metric_data.statistics.end());
-  metric_data.statistics[0].data_type = StatisticDataType::STATISTICS_DATA_TYPE_STDDEV;
-  metric_data.statistics[0].data = 0.1234;
-
-  auto msg = std::make_unique<metrics_statistics_msgs::msg::MetricsMessage>(metric_data);
-  int num_batched = metrics_collector_.RecordMetrics(std::move(msg));
-  ASSERT_EQ(1, num_batched);
-
-  const auto & metric_objs = mock_metric_service_->GetMetricObjects();
-  ASSERT_EQ(static_cast<size_t>(num_batched), metric_objs.size());
-
-  EXPECT_EQ(metric_data.measurement_source_name, metric_objs[0].dimensions.at("Measurement Source"));
-  EXPECT_EQ(metric_data.metrics_source+"_stddev", metric_objs[0].metric_name);
-  EXPECT_EQ(metric_data.unit, metric_objs[0].unit);
-  EXPECT_EQ(MetricsCollector::GetMetricDataEpochMillis(metric_data.window_start), metric_objs[0].timestamp);
-  EXPECT_DOUBLE_EQ(metric_data.statistics[0].data, metric_objs[0].value);
-  EXPECT_TRUE(metric_objs[0].statistic_values.empty());
-}
-
-TEST_F(MetricsCollectorFixture, RecordMetricsMessageWithoutStddev)
-{
-  metrics_statistics_msgs::msg::MetricsMessage metric_data = EmptyMetricsData();
-  metric_data.statistics.erase(
-    std::remove_if(metric_data.statistics.begin(), metric_data.statistics.end(),
-      [](const metrics_statistics_msgs::msg::StatisticDataPoint & data_point) {
-        return data_point.data_type == StatisticDataType::STATISTICS_DATA_TYPE_STDDEV;
-      }),
-    metric_data.statistics.end());
-  for (auto & statistic : metric_data.statistics) {
-    statistic.data = 100.0;
-  }
-
-  auto msg = std::make_unique<metrics_statistics_msgs::msg::MetricsMessage>(metric_data);
-  int num_batched = metrics_collector_.RecordMetrics(std::move(msg));
-  ASSERT_EQ(1, num_batched);
-
-  const auto & metric_objs = mock_metric_service_->GetMetricObjects();
-  ASSERT_EQ(static_cast<size_t>(num_batched), metric_objs.size());
-
-  EXPECT_EQ(metric_data.measurement_source_name, metric_objs[0].dimensions.at("Measurement Source"));
-  EXPECT_EQ(metric_data.metrics_source, metric_objs[0].metric_name);
-  EXPECT_EQ(metric_data.unit, metric_objs[0].unit);
-  EXPECT_EQ(MetricsCollector::GetMetricDataEpochMillis(metric_data.window_start), metric_objs[0].timestamp);
-
-  for (const auto & statistic : metric_data.statistics) {
-    if (statistic.data_type == StatisticDataType::STATISTICS_DATA_TYPE_AVERAGE) {
-      EXPECT_DOUBLE_EQ(statistic.data, metric_objs[0].statistic_values.at(StatisticValuesType::SUM)
-        / metric_objs[0].statistic_values.at(StatisticValuesType::SAMPLE_COUNT));
-    } else if (statistic.data_type == StatisticDataType::STATISTICS_DATA_TYPE_MAXIMUM) {
-      EXPECT_DOUBLE_EQ(statistic.data, metric_objs[0].statistic_values.at(StatisticValuesType::MAXIMUM));
-    } else if (statistic.data_type == StatisticDataType::STATISTICS_DATA_TYPE_MINIMUM) {
-      EXPECT_DOUBLE_EQ(statistic.data, metric_objs[0].statistic_values.at(StatisticValuesType::MINIMUM));
-    } else if (statistic.data_type == StatisticDataType::STATISTICS_DATA_TYPE_SAMPLE_COUNT) {
-      EXPECT_DOUBLE_EQ(statistic.data, metric_objs[0].statistic_values.at(StatisticValuesType::SAMPLE_COUNT));
-    } else {
-      FAIL() << "Unexpected statistic data type" << statistic.data_type;
-    }
-  }
 }
 
 int main(int argc, char ** argv)

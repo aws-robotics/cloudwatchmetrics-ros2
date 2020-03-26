@@ -19,8 +19,6 @@
 #include <limits>
 
 #include <builtin_interfaces/msg/time.hpp>
-#include <metrics_statistics_msgs/msg/metrics_message.hpp>
-#include <metrics_statistics_msgs/msg/statistic_data_type.hpp>
 #include <ros_monitoring_msgs/msg/metric_data.hpp>
 
 constexpr char kMeasurementSource[] = "CWMetricsNodeTest";
@@ -46,41 +44,5 @@ inline ros_monitoring_msgs::msg::MetricData EmptyMonitoringData()
   data.unit = kMetricUnit;
   data.value = std::numeric_limits<decltype(data.value)>::quiet_NaN();
   chrono_time_point_to_builtin_interfaces_time(std::chrono::system_clock::now(), data.time_stamp);
-  return data;
-}
-
-inline metrics_statistics_msgs::msg::MetricsMessage EmptyMetricsData()
-{
-  metrics_statistics_msgs::msg::MetricsMessage data = metrics_statistics_msgs::msg::MetricsMessage();
-  data.measurement_source_name = kMeasurementSource;
-  data.metrics_source = kMetricName;
-  data.unit = kMetricUnit;
-  chrono_time_point_to_builtin_interfaces_time(std::chrono::system_clock::now(), data.window_start);
-  chrono_time_point_to_builtin_interfaces_time(std::chrono::system_clock::now(), data.window_stop);
-
-  using metrics_statistics_msgs::msg::StatisticDataType;
-  using StatisticValueType = decltype(metrics_statistics_msgs::msg::StatisticDataPoint::data);
-  data.statistics.reserve(5);
-
-  data.statistics.emplace_back();
-  data.statistics.back().data_type = StatisticDataType::STATISTICS_DATA_TYPE_AVERAGE;
-  data.statistics.back().data = std::numeric_limits<StatisticValueType>::quiet_NaN();
-
-  data.statistics.emplace_back();
-  data.statistics.back().data_type = StatisticDataType::STATISTICS_DATA_TYPE_MAXIMUM;
-  data.statistics.back().data = std::numeric_limits<StatisticValueType>::quiet_NaN();
-
-  data.statistics.emplace_back();
-  data.statistics.back().data_type = StatisticDataType::STATISTICS_DATA_TYPE_MINIMUM;
-  data.statistics.back().data = std::numeric_limits<StatisticValueType>::quiet_NaN();
-
-  data.statistics.emplace_back();
-  data.statistics.back().data_type = StatisticDataType::STATISTICS_DATA_TYPE_SAMPLE_COUNT;
-  data.statistics.back().data = std::numeric_limits<StatisticValueType>::quiet_NaN();
-
-  data.statistics.emplace_back();
-  data.statistics.back().data_type = StatisticDataType::STATISTICS_DATA_TYPE_STDDEV;
-  data.statistics.back().data = std::numeric_limits<StatisticValueType>::quiet_NaN();
-
   return data;
 }

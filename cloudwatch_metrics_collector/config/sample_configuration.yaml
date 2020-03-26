@@ -12,12 +12,6 @@ cloudwatch_metrics_collector:
     # topics in the list.
     # aws_monitored_metric_topics: ["metrics"]
 
-    # An optional list of topics to listen to, where the message the type is metrics_statistics_msgs/msg/MetricsMessage.
-    # If not provided or is empty the node will just listen on the global "system_metrics" topic.
-    # If this list is not empty then the node will not subscribe to the "system_metrics" topic and will only subscribe to the
-    # topics in the list.
-    # system_metrics_topics: ["system_metrics"]
-
     # The absolute path to a folder that all offline metric files will be stored in
     storage_directory: "~/.ros/cwmetrics/"
 

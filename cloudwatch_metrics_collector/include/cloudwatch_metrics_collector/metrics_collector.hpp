@@ -20,7 +20,6 @@
 
 #include <aws_common/sdk_utils/logging/aws_log_system.h>
 #include <builtin_interfaces/msg/time.hpp>
-#include <metrics_statistics_msgs/msg/metrics_message.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <ros_monitoring_msgs/msg/metric_list.hpp>
 #include <std_srvs/srv/empty.hpp>
@@ -50,14 +49,6 @@ public:
   int RecordMetrics(ros_monitoring_msgs::msg::MetricList::UniquePtr metric_list_msg);
 
   /**
-   * Accept input metrics_statistics_msgs::msg::MetricsMessage message to be batched for publishing.
-   *
-   * @param msg
-   * @return the number of metrics successfully batched
-   */
-  int RecordMetrics(metrics_statistics_msgs::msg::MetricsMessage::UniquePtr msg);
-
-  /**
    * Force all batched data to be published to CloudWatch.
    */
   void TriggerPublish();
@@ -82,27 +73,6 @@ public:
                   const Aws::CloudWatchMetrics::CloudWatchOptions & cloudwatch_options,
                   const std::vector<std::string> & topics,
                   const std::shared_ptr<MetricServiceFactory> & metric_service_factory = std::make_shared<MetricServiceFactory>());
-
-  /**
-   * Initialize the MetricsCollector with parameters read from the config file.
-   *
-   * @param metric_namespace
-   * @param default_dimensions
-   * @param storage_resolution
-   * @param config
-   * @param sdk_options
-   * @param topics
-   * @param metric_service_factory
-   */
-  void Initialize(std::string metric_namespace,
-                  const std::map<std::string, std::string> & default_dimensions,
-                  int storage_resolution,
-                  rclcpp::Node::SharedPtr node,
-                  const Aws::Client::ClientConfiguration & config,
-                  const Aws::SDKOptions & sdk_options,
-                  const Aws::CloudWatchMetrics::CloudWatchOptions & cloudwatch_options,
-                  const std::vector<TopicInfo> & topics,
-                  const std::shared_ptr<MetricServiceFactory>& metric_service_factory = std::make_shared<MetricServiceFactory>());
 
   void SubscribeAllTopics();
 
@@ -132,7 +102,7 @@ private:
   std::shared_ptr<MetricService> metric_service_;
   std::vector<std::shared_ptr<rclcpp::SubscriptionBase>> subscriptions_;
   rclcpp::Node::SharedPtr node_;
-  std::vector<Aws::CloudWatchMetrics::Utils::TopicInfo> topics_;
+  std::vector<std::string> topics_;
 };
 
 }  // namespace Utils
