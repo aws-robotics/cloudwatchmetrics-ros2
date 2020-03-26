@@ -35,6 +35,7 @@ constexpr char kNodeParamMetricNamespaceKey[] = "aws_metrics_namespace";
 constexpr char kNodeParamDefaultMetricDimensionsKey[]  = "aws_default_metric_dimensions";
 constexpr char kNodeName[] = "cloudwatch_metrics_collector";
 constexpr char kNodeParamPublishFrequencyKey[] = "publish_frequency";
+constexpr char kNodeParamMetricDatumStorageResolutionKey[] = "storage_resolution";
 
 /** Configuration params for Aws::DataFlow::UploaderOptions **/
 constexpr char kNodeParamBatchMaxQueueSize[] = "batch_max_queue_size";
@@ -56,7 +57,6 @@ constexpr int kNodeMetricServiceTimeSec = 1;
 constexpr char kNodeDefaultMetricNamespace[] = "ROS";
 constexpr char kNodeDefaultMetricsTopic[] = "metrics";
 constexpr int kNodeDefaultMetricDatumStorageResolution = 60;
-constexpr char kNodeParamMetricDatumStorageResolutionKey[] = "storage_resolution";
 const std::set<int> kNodeParamMetricDatumStorageResolutionValidValues = {1, 60};
 
 

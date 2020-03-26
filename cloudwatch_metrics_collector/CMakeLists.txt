@@ -147,4 +147,14 @@ if(BUILD_TESTING)
   target_link_libraries(test_metrics_collector
           ${PROJECT_NAME}_lib
           )
+
+  ament_add_gmock(test_metrics_collector_param_helper
+          test/metrics_collector_param_helper_test.cpp
+          )
+  target_include_directories(test_metrics_collector_param_helper PRIVATE
+          ${cloudwatch_metrics_ros2_INCS}
+          )
+  target_link_libraries(test_metrics_collector_param_helper
+          ${PROJECT_NAME}_lib
+          )
 endif()
