@@ -103,7 +103,7 @@ An example configuration file named `sample_configuration.yaml` is provided that
 | Parameter Name | Description | Type | Default |
 | ------------- | -----------------------------------------------------------| ------------- | ------------ |
 | aws_metrics_namespace | If provided it will set the namespace for all metrics provided by this node to the provided value. If the node is running on AWS RoboMaker then the provided launch file will ignore this parameter in favor of the namespace specified by the AWS RoboMaker ecosystem | *string* | ROS |
-| aws_monitored_metric_topics | An optional list of topics to listen to. If not provided or is empty the node will just listen on the global "metrics" topic. If this list is not empty then the node will not subscribe to the "metrics" topic and will only subscribe to the topics in the list. | *array of strings* | metrics |
+| aws_monitored_metric_topics | An optional list of topics to listen to, where the message the type is `ros_monitoring_msgs/msg/MetricList`. If not provided or is empty the node will just listen on the global "metrics" topic. If this list is not empty then the node will not subscribe to the "metrics" topic and will only subscribe to the topics in the list. | *array of strings* | metrics |
 | storage_directory | The location where all offline metrics will be stored | *string* | ~/.ros/cwmetrics/ |
 | storage_limit | The maximum size of all offline storage files in KB. Once this limit is reached offline logs will start to be deleted oldest first. | *int* | 1048576 |
 | aws_client_configuration | If given the node will load the provided configuration when initializing the client. If a specific configuration setting is not included in the map then it will search up the namespace hierarchy for an 'aws_client_configuration' map that contains the field. In this way, a global configuration can be provided for all AWS nodes with only specific values overridden for a specific Node instance if needed | *map* | |
@@ -131,10 +131,9 @@ Most users won't need to touch these parameters, they are useful if you want fin
 Sends metrics in a ROS system to AWS CloudWatch Metrics service.
 
 #### Subscribed Topics
-- **`Configurable (default="/metrics")`**
+- **Configurable (default: "`/metrics`")**
 
-  The node can subscribe to a configurable list of topic names. If no list in provided then it will default to subscribing to a global topic names `/metrics`.<br/>
-  Message Type: `ros_monitoring_msgs/msg/MetricList`
+The node can subscribe to a configurable list of topic names. If no list is provided then it will default to subscribing to global topic names: `/metrics` (message type: `ros_monitoring_msgs/msg/MetricList`).
 
 #### Published Topics
 None

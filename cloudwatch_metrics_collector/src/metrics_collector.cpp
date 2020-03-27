@@ -13,53 +13,55 @@
  * permissions and limitations under the License.
  */
 
+#include <limits>
+#include <map>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include <aws/core/Aws.h>
 #include <aws/core/client/ClientConfiguration.h>
-#include <aws/core/utils/StringUtils.h>
 #include <aws/core/utils/logging/AWSLogging.h>
 #include <aws/core/utils/logging/LogMacros.h>
+#include <aws/core/utils/StringUtils.h>
 #include <aws/monitoring/CloudWatchClient.h>
 #include <aws/monitoring/model/PutMetricDataRequest.h>
 #include <aws_common/sdk_utils/client_configuration_provider.h>
 #include <aws_ros2_common/sdk_utils/logging/aws_ros_logger.h>
+#include <builtin_interfaces/msg/time.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <ros_monitoring_msgs/msg/metric_data.hpp>
 #include <ros_monitoring_msgs/msg/metric_dimension.hpp>
 #include <ros_monitoring_msgs/msg/metric_list.hpp>
 #include <std_msgs/msg/string.h>
+#include <std_srvs/srv/empty.hpp>
+#include <std_srvs/srv/trigger.hpp>
 
 #include <cloudwatch_metrics_collector/metrics_collector.hpp>
 #include <cloudwatch_metrics_collector/metrics_collector_parameter_helper.hpp>
 #include <cloudwatch_metrics_common/metric_service.hpp>
 #include <cloudwatch_metrics_common/metric_service_factory.hpp>
-#include <string>
-#include <vector>
-#include <map>
-#include <std_srvs/srv/trigger.hpp>
-#include <std_srvs/srv/empty.hpp>
 
-using namespace Aws::Client;
-using namespace Aws::Utils::Logging;
-using namespace Aws::CloudWatchMetrics::Utils;
 
 namespace Aws {
 namespace CloudWatchMetrics {
 namespace Utils {
 
 void MetricsCollector::Initialize(std::string metric_namespace,
-                         std::map<std::string, std::string> & default_dimensions,
+                         const std::map<std::string, std::string> & default_dimensions,
                          int storage_resolution,
                          rclcpp::Node::SharedPtr node,
                          const Aws::Client::ClientConfiguration & config,
                          const Aws::SDKOptions & sdk_options,
                          const Aws::CloudWatchMetrics::CloudWatchOptions & cloudwatch_options,
                          const std::vector<std::string> & topics,
-                         std::shared_ptr<MetricServiceFactory> metric_service_factory) {
+                         const std::shared_ptr<MetricServiceFactory>& metric_service_factory) {
 
-  this->metric_namespace_ = metric_namespace;
+  this->metric_namespace_ = std::move(metric_namespace);
   this->default_dimensions_ = default_dimensions;
   this->storage_resolution_.store(storage_resolution);
-  this->node_ = node;
+  this->node_ = std::move(node);
   this->metric_service_ = metric_service_factory->createMetricService(this->metric_namespace_,
                                                                       config,
                                                                       sdk_options,
@@ -69,13 +71,14 @@ void MetricsCollector::Initialize(std::string metric_namespace,
 
 void MetricsCollector::SubscribeAllTopics()
 {
-  for (auto it = topics_.begin(); it != topics_.end(); ++it) {
-    auto sub = node_->create_subscription<ros_monitoring_msgs::msg::MetricList>(
-            *it, kNodeSubQueueSize,
-            [this](ros_monitoring_msgs::msg::MetricList::UniquePtr metric_list_msg) -> void {
-                this->RecordMetrics(std::move(metric_list_msg));
-            });
-    subscriptions_.push_back(sub);
+  for (const auto & topic_name : topics_) {
+    std::shared_ptr<rclcpp::SubscriptionBase> sub =
+      node_->create_subscription<ros_monitoring_msgs::msg::MetricList>(
+        topic_name, kNodeSubQueueSize,
+        [this](ros_monitoring_msgs::msg::MetricList::UniquePtr metric_list_msg) -> void {
+          this->RecordMetrics(std::move(metric_list_msg));
+        });
+    subscriptions_.push_back(std::move(sub));
   }
 }
 
@@ -90,37 +93,37 @@ int MetricsCollector::RecordMetrics(
 
     std::map<std::string, std::string> dimensions;
 
-    for (auto it = default_dimensions_.begin(); it != default_dimensions_.end(); ++it) {
-      dimensions.emplace(it->first, it->second);  // ignore the return, if we get a duplicate we're
+    for (auto & default_dimension : default_dimensions_) {
+      dimensions.emplace(default_dimension.first, default_dimension.second);  // ignore the return, if we get a duplicate we're
                                                   // going to stick with the first one
     }
-    for (auto it = metric_msg->dimensions.begin(); it != metric_msg->dimensions.end(); ++it) {
-      dimensions.emplace((*it).name, (*it).value);  // ignore the return, if we get a duplicate
+    for (auto & dimension : metric_msg->dimensions) {
+      dimensions.emplace(dimension.name, dimension.value);  // ignore the return, if we get a duplicate
                                                     // we're going to stick with the first one
     }
     AWS_LOGSTREAM_DEBUG(__func__, "Recording metric with name=[" << metric_msg->metric_name << "]");
 
     // create a MetricObject with message parameters to batch
-    Aws::CloudWatchMetrics::Utils::MetricObject metric_object {metric_msg->metric_name,
+    Aws::CloudWatchMetrics::Utils::MetricObject metric_object{metric_msg->metric_name,
                                                               metric_msg->value,
                                                               metric_msg->unit,
-                                                              GetMetricDataEpochMillis(*metric_msg),
+                                                              GetMetricDataEpochMillis(metric_msg->time_stamp),
                                                               dimensions,
                                                               this->storage_resolution_.load()};
     bool batched = metric_service_->batchData(metric_object);
 
     if (!batched) {
-      AWS_LOGSTREAM_ERROR(__func__, "Failed to record metric");
+      AWS_LOGSTREAM_ERROR(__func__, "Failed to record ROS monitoring message");
+    } else {
+      ++batched_count;
     }
-
-    batched_count++;
   }
   return batched_count;
 }
 
-int64_t MetricsCollector::GetMetricDataEpochMillis(const ros_monitoring_msgs::msg::MetricData & metric_msg)
+int64_t MetricsCollector::GetMetricDataEpochMillis(const builtin_interfaces::msg::Time & time_stamp)
 {
-  return rclcpp::Time(metric_msg.time_stamp).nanoseconds() / 1000000;
+  return rclcpp::Time(time_stamp).nanoseconds() / 1000000;
 }
 
 void MetricsCollector::TriggerPublish()
@@ -148,7 +151,7 @@ bool MetricsCollector::shutdown() {
   return is_shutdown;
 }
 
-bool MetricsCollector::checkIfOnline(std::shared_ptr<std_srvs::srv::Trigger::Request> , std::shared_ptr<std_srvs::srv::Trigger::Response> response) {
+bool MetricsCollector::checkIfOnline(const std::shared_ptr<std_srvs::srv::Trigger::Request>& , const std::shared_ptr<std_srvs::srv::Trigger::Response>& response) {
 
   AWS_LOGSTREAM_DEBUG(__func__, "received request");
 
@@ -167,5 +170,3 @@ bool MetricsCollector::checkIfOnline(std::shared_ptr<std_srvs::srv::Trigger::Req
 }  // namespace Utils
 }  // namespace CloudWatchMetrics
 }  // namespace Aws
-
-

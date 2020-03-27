@@ -28,12 +28,12 @@ find_package(aws_ros2_common REQUIRED)
 find_package(cloudwatch_metrics_common REQUIRED)
 find_package(dataflow_lite REQUIRED)
 find_package(file_management REQUIRED)
-find_package(rmw_implementation REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(rosgraph_msgs REQUIRED)
+find_package(rmw_implementation REQUIRED)
 find_package(ros_monitoring_msgs REQUIRED)
-find_package(std_srvs REQUIRED)
+find_package(rosgraph_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
 
 ###########
 ## Build ##
@@ -48,28 +48,28 @@ set(cloudwatch_metrics_ros2_INCS
   ${cloudwatch_metrics_common_INCLUDE_DIRS}
   ${dataflow_lite_INCLUDE_DIRS}
   ${file_management_INCLUDE_DIRS}
-  ${rmw_implementation_INCLUDE_DIRS}
   ${rclcpp_INCLUDE_DIRS}
-  ${rosgraph_msgs_INCLUDE_DIRS}
+  ${rmw_implementation_INCLUDE_DIRS}
   ${ros_monitoring_msgs_INCLUDE_DIRS}
-  ${std_srvs_INCLUDE_DIRS}
+  ${rosgraph_msgs_INCLUDE_DIRS}
   ${std_msgs_INCLUDE_DIRS}
+  ${std_srvs_INCLUDE_DIRS}
 )
 
 set(cloudwatch_metrics_ros2_LIBS
   ${ament_cmake_LIBRARIES}
   ${aws_common_LIBRARIES}
   ${aws_ros2_common_LIBRARIES}
-  ${cloudwatch_metrics_common_LIBRARIES}
   ${cloudwatch_metrics_collector_LIBRARIES}
+  ${cloudwatch_metrics_common_LIBRARIES}
   ${dataflow_lite_LIBRARIES}
   ${file_management_LIBRARIES}
-  ${rmw_implementation_LIBRARIES}
   ${rclcpp_LIBRARIES}
-  ${rosgraph_msgs_LIBRARIES}
+  ${rmw_implementation_LIBRARIES}
   ${ros_monitoring_msgs_LIBRARIES}
-  ${std_srvs_LIBRARIES}
+  ${rosgraph_msgs_LIBRARIES}
   ${std_msgs_LIBRARIES}
+  ${std_srvs_LIBRARIES}
 )
 
 ## Declare a C++ executable
@@ -110,12 +110,12 @@ ament_export_dependencies(aws_ros2_common)
 ament_export_dependencies(cloudwatch_metrics_common)
 ament_export_dependencies(dataflow_lite)
 ament_export_dependencies(file_management)
-ament_export_dependencies(rmw_implementation)
 ament_export_dependencies(rclcpp)
-ament_export_dependencies(rosgraph_msgs)
+ament_export_dependencies(rmw_implementation)
 ament_export_dependencies(ros_monitoring_msgs)
-ament_export_dependencies(std_srvs)
+ament_export_dependencies(rosgraph_msgs)
 ament_export_dependencies(std_msgs)
+ament_export_dependencies(std_srvs)
 
 ament_export_include_directories(include)
 ament_export_libraries(${PROJECT_NAME}_lib ${cloudwatch_metrics_ros2_LIBS})
@@ -135,6 +135,26 @@ if(BUILD_TESTING)
           ${cloudwatch_metrics_ros2_INCS}
           )
   target_link_libraries(test_cloudwatch_metrics_collector
+          ${PROJECT_NAME}_lib
+          )
+
+  ament_add_gmock(test_metrics_collector
+          test/metrics_collector_test.cpp
+          )
+  target_include_directories(test_metrics_collector PRIVATE
+          ${cloudwatch_metrics_ros2_INCS}
+          )
+  target_link_libraries(test_metrics_collector
+          ${PROJECT_NAME}_lib
+          )
+
+  ament_add_gmock(test_metrics_collector_param_helper
+          test/metrics_collector_param_helper_test.cpp
+          )
+  target_include_directories(test_metrics_collector_param_helper PRIVATE
+          ${cloudwatch_metrics_ros2_INCS}
+          )
+  target_link_libraries(test_metrics_collector_param_helper
           ${PROJECT_NAME}_lib
           )
 endif()

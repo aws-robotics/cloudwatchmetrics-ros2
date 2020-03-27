@@ -13,16 +13,18 @@
  * permissions and limitations under the License.
  */
 
+#include <iostream>
+#include <unordered_set>
+
+#include <aws/core/utils/logging/LogMacros.h>
 #include <aws_common/sdk_utils/aws_error.h>
 #include <aws_common/sdk_utils/parameter_reader.h>
 #include <rclcpp/rclcpp.hpp>
-#include <unordered_set>
-#include <iostream>
-#include <aws/core/utils/logging/LogMacros.h>
+
 #include <cloudwatch_metrics_collector/metrics_collector_parameter_helper.hpp>
 #include <cloudwatch_metrics_common/cloudwatch_options.h>
 
-using namespace Aws::Client;
+using Aws::Client::ParameterPath;
 
 namespace Aws {
 namespace CloudWatchMetrics {
@@ -37,7 +39,7 @@ namespace Utils {
  * as returned by \p parameter_reader
  */
 void ReadPublishFrequency(
-        std::shared_ptr<Aws::Client::ParameterReaderInterface> parameter_reader,
+        const std::shared_ptr<Aws::Client::ParameterReaderInterface>& parameter_reader,
         int & publish_frequency) {
 
   Aws::AwsError ret =
@@ -69,7 +71,7 @@ void ReadPublishFrequency(
  * @return
  */
 void ReadMetricNamespace(
-        std::shared_ptr<Aws::Client::ParameterReaderInterface> parameter_reader,
+        const std::shared_ptr<Aws::Client::ParameterReaderInterface>& parameter_reader,
         std::string & metric_namespace) {
 
   // Load the metric namespace
@@ -93,7 +95,7 @@ void ReadMetricNamespace(
  * @return
  */
 void ReadMetricDimensions(
-        std::shared_ptr<Aws::Client::ParameterReaderInterface> parameter_reader,
+        const std::shared_ptr<Aws::Client::ParameterReaderInterface>& parameter_reader,
         Aws::String & dimensions_param,
         std::map<std::string, std::string> & metric_dims) {
 
@@ -105,16 +107,16 @@ void ReadMetricDimensions(
   logging_stream << "Default Metric Dimensions: { ";
   if (Aws::AWS_ERR_OK == read_dimensions_status) {
     auto dims = Aws::Utils::StringUtils::Split(dimensions_param, ';');
-    for (auto it = dims.begin(); it != dims.end(); ++it) {
-      if (!it->empty()) {
-        auto dim_vec = Aws::Utils::StringUtils::Split(*it, ':');
+    for (auto & dim : dims) {
+      if (!dim.empty()) {
+        auto dim_vec = Aws::Utils::StringUtils::Split(dim, ':');
         if (dim_vec.size() == 2) {
           metric_dims.emplace(dim_vec[0].c_str(), dim_vec[1].c_str());
           logging_stream << dim_vec[0] << ": " << dim_vec[1] << ", ";
         } else {
           AWS_LOGSTREAM_WARN(
                   __func__, "Could not parse dimension: "
-                          << *it << ". Should be in the format <DimensionName>:<DimensionValue>");
+                          << dim << ". Should be in the format <DimensionName>:<DimensionValue>");
         }
       }
     }
@@ -130,7 +132,7 @@ void ReadMetricDimensions(
  * @return
  */
 void ReadStorageResolution(
-        std::shared_ptr<Aws::Client::ParameterReaderInterface> parameter_reader,
+        const std::shared_ptr<Aws::Client::ParameterReaderInterface>& parameter_reader,
         int & storage_resolution) {
 
   // Load the storage resolution
@@ -160,25 +162,22 @@ void ReadStorageResolution(
 }
 
 void ReadTopics(
-        std::shared_ptr<Aws::Client::ParameterReaderInterface> parameter_reader,
+        const std::shared_ptr<Aws::Client::ParameterReaderInterface>& parameter_reader,
         std::vector<std::string> & topics) {
 
-  std::string param_key;
-  if (AWS_ERR_OK != parameter_reader->ReadParam(ParameterPath(kNodeParamMonitorTopicsListKey), param_key)) {
-    parameter_reader->ReadParam(ParameterPath(param_key), topics);
-  }
+  parameter_reader->ReadParam(ParameterPath(kNodeParamMonitoringTopicsListKey), topics);
   if (topics.empty()) {
-    AWS_LOGSTREAM_INFO(
-            __func__, "Topic list not defined or empty. Listening on topic: " << kNodeDefaulMetricsTopic);
-    topics.push_back(kNodeDefaulMetricsTopic);
+    AWS_LOGSTREAM_INFO(__func__, "Monitoring topics list not defined or empty. Listening on topic: "
+                       << kNodeDefaultMetricsTopic);
+    topics.emplace_back(kNodeDefaultMetricsTopic);
   }
 }
 
 void ReadCloudWatchOptions(
-  std::shared_ptr<Aws::Client::ParameterReaderInterface> parameter_reader,
+  const std::shared_ptr<Aws::Client::ParameterReaderInterface>& parameter_reader,
   Aws::CloudWatchMetrics::CloudWatchOptions & cloudwatch_options) {
 
-  Aws::DataFlow::UploaderOptions uploader_options;
+  Aws::DataFlow::UploaderOptions uploader_options{};
   Aws::FileManagement::FileManagerStrategyOptions file_manager_strategy_options;
 
   ReadUploaderOptions(parameter_reader, uploader_options);
@@ -191,7 +190,7 @@ void ReadCloudWatchOptions(
 }
 
 void ReadUploaderOptions(
-  std::shared_ptr<Aws::Client::ParameterReaderInterface> parameter_reader,
+  const std::shared_ptr<Aws::Client::ParameterReaderInterface>& parameter_reader,
   Aws::DataFlow::UploaderOptions & uploader_options) {
 
   ReadOption(
@@ -231,7 +230,7 @@ void ReadUploaderOptions(
 }
 
 void ReadFileManagerStrategyOptions(
-  std::shared_ptr<Aws::Client::ParameterReaderInterface> parameter_reader,
+  const std::shared_ptr<Aws::Client::ParameterReaderInterface>& parameter_reader,
   Aws::FileManagement::FileManagerStrategyOptions & file_manager_strategy_options) {
 
   ReadOption(
@@ -266,7 +265,7 @@ void ReadFileManagerStrategyOptions(
 }
 
 void ReadOption(
-  std::shared_ptr<Aws::Client::ParameterReaderInterface> parameter_reader,
+  const std::shared_ptr<Aws::Client::ParameterReaderInterface>& parameter_reader,
   const std::string & option_key,
   const std::string & default_value,
   std::string & option_value) {
@@ -288,7 +287,7 @@ void ReadOption(
 }
 
 void ReadOption(
-  std::shared_ptr<Aws::Client::ParameterReaderInterface> parameter_reader,
+  const std::shared_ptr<Aws::Client::ParameterReaderInterface>& parameter_reader,
   const std::string & option_key,
   const size_t & default_value,
   size_t & option_value) {
@@ -302,7 +301,7 @@ void ReadOption(
                          option_key << " parameter not found, setting to default value: " << default_value);
       break;
     case Aws::AwsError::AWS_ERR_OK:
-      option_value = (size_t)param_value;
+      option_value = static_cast<size_t>(param_value);
       AWS_LOGSTREAM_INFO(__func__, option_key << " is set to: " << option_value);
       break;
     default:
