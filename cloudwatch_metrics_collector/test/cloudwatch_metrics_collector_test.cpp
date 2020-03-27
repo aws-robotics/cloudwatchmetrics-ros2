@@ -26,6 +26,7 @@
 #include <cloudwatch_metrics_common/metric_publisher.hpp>
 #include <cloudwatch_metrics_common/metric_service.hpp>
 #include <cloudwatch_metrics_common/metric_service_factory.hpp>
+#include <file_management/file_upload/file_upload_streamer.h>
 #include <utility>
 
 #include "test_common.hpp"
